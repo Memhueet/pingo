@@ -650,7 +650,7 @@ button:focus-visible {
   box-shadow: var(--shadow-inset-sm);
 }
 
-/* ---------- 目标卡片 ---------- */
+/* ---------- 目标卡片（状态圆点 + 三行扫读，IP 为主位） ---------- */
 
 .targetCard {
   padding: var(--spacing-md);
@@ -695,63 +695,111 @@ button:focus-visible {
   box-shadow: var(--shadow-raised), 0 0 0 2px color-mix(in srgb, var(--theme-alert) 60%, transparent);
 }
 
-.targetCardBody {
+.tcHead {
   display: flex;
-  flex-direction: column;
-  gap: var(--spacing-xs);
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-sm);
+  min-width: 0;
 }
 
-.targetCardHeader {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.targetCardHeader strong {
+.tcIp {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
   font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: 0.2px;
+  white-space: nowrap;
 }
 
-.targetCardHeader span {
-  color: var(--theme-textSecondary);
-  font-size: var(--font-size-sm);
+.tcDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
 }
 
-.targetStats {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--spacing-xs);
-  margin-top: var(--spacing-xs);
+.status-ok .tcDot {
+  background: var(--theme-success);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--theme-success) 18%, transparent);
 }
 
-.targetStats span {
-  padding: 3px 8px;
-  border-radius: var(--radius-sm);
-  font-size: var(--font-size-xs);
-  color: var(--theme-textSecondary);
-  background: var(--theme-background);
-  box-shadow: var(--shadow-inset-sm);
-}
-
-.targetStatusIndicator {
-  position: absolute;
-  top: var(--spacing-sm);
-  right: var(--spacing-sm);
-  font-size: var(--font-size-xs);
-  padding: 2px 6px;
-  border-radius: var(--radius-sm);
-}
-
-.targetStatusIndicator .enabledIcon {
-  color: var(--theme-success);
-}
-
-.targetStatusIndicator .disabledIcon {
-  color: var(--theme-textSecondary);
-}
-
-.targetStatusIndicator .alertIcon {
-  color: var(--theme-alert);
+.status-alert .tcDot {
+  background: var(--theme-alert);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--theme-alert) 24%, transparent);
   animation: pulse 1.5s ease-in-out infinite;
+}
+
+.status-off .tcDot {
+  background: var(--theme-textSecondary);
+}
+
+.tcStatus {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  flex-shrink: 0;
+}
+
+.status-alert .tcStatus {
+  color: var(--theme-alert);
+}
+
+.status-alert .tcStatus svg {
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+/* 停用目标：整卡内容置灰 */
+.targetCard.status-off .tcHead,
+.targetCard.status-off .tcSub,
+.targetCard.status-off .tcFoot {
+  opacity: 0.55;
+}
+
+.tcSub {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--spacing-sm);
+  margin-top: 3px;
+  font-size: var(--font-size-sm);
+  color: var(--theme-textSecondary);
+  min-width: 0;
+}
+
+.tcAlias {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tcLatency {
+  flex-shrink: 0;
+}
+
+.tcLatency b {
+  font-weight: var(--font-weight-semibold);
+  color: var(--theme-text);
+}
+
+.tcSep {
+  opacity: 0.5;
+}
+
+.tcFoot {
+  margin-top: 8px;
+  font-size: var(--font-size-xs);
+  color: var(--theme-textSecondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tcFoot b {
+  font-weight: var(--font-weight-semibold);
 }
 
 @keyframes pulse {

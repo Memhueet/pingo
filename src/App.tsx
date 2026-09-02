@@ -261,6 +261,10 @@ export default function App() {
   const sortedTargets = useMemo(() => {
     const direction = sortDirection === "asc" ? 1 : -1;
     return [...targets].sort((a, b) => {
+      // 停用的目标固定排在启用目标之后，不参与排序竞争
+      if (a.target.enabled !== b.target.enabled) {
+        return a.target.enabled ? -1 : 1;
+      }
       if (sortMode === "ip") {
         const ipToNum = (ip: string) => ip.split(".").reduce((acc, octet) => (acc << 8) + parseInt(octet), 0);
         return direction * (ipToNum(a.target.ipv4) - ipToNum(b.target.ipv4));

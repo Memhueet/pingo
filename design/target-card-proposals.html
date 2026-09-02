@@ -1,0 +1,641 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pingo 目标卡片优化方案 · 5 选 1</title>
+<style>
+  :root {
+    /* 与应用「纯净白」主题一致的新拟态 token */
+    --surface: #e0e5ec;
+    --text: #1e293b;
+    --text-2: #4f5e76;
+    --text-3: #64748b;
+    --accent: #3b82f6;
+    --accent-ring: rgba(59, 130, 246, 0.55);
+    --ok: #15803d;
+    --ok-fill: #22c55e;
+    --ok-bg: rgba(34, 197, 94, 0.14);
+    --warn: #b45309;
+    --warn-fill: #f59e0b;
+    --warn-bg: rgba(245, 158, 11, 0.18);
+    --bad: #b91c1c;
+    --bad-fill: #ef4444;
+    --bad-bg: rgba(239, 68, 68, 0.12);
+    --off: #64748b;
+    --off-fill: #94a3b8;
+    --off-bg: rgba(100, 116, 139, 0.14);
+    --sd: #a3b1c6;
+    --sl: #ffffff;
+    --raised-sm: 3px 3px 7px var(--sd), -3px -3px 7px var(--sl);
+    --raised: 6px 6px 14px var(--sd), -6px -6px 14px var(--sl);
+    --inset-sm: inset 2px 2px 5px var(--sd), inset -2px -2px 5px var(--sl);
+    --radius: 14px;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 40px 32px 80px;
+    background: var(--surface);
+    color: var(--text);
+    font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+  }
+  .pageHead { max-width: 980px; margin: 0 auto 44px; }
+  .pageHead h1 { margin: 0 0 6px; font-size: 26px; }
+  .pageHead > p { margin: 0; color: var(--text-2); font-size: 14px; line-height: 1.7; }
+  .pageHead .tokenNote {
+    margin-top: 14px; padding: 10px 14px; border-radius: 10px;
+    background: var(--surface); box-shadow: var(--inset-sm);
+    color: var(--text-2); font-size: 12.5px; line-height: 1.7;
+  }
+
+  .proposal { max-width: 980px; margin: 0 auto 52px; }
+  .proposalHead { display: flex; align-items: baseline; gap: 14px; }
+  .proposalHead .no {
+    font-size: 40px; font-weight: 700; color: var(--sd);
+    text-shadow: -1px -1px 1px var(--sl), 1px 1px 1px var(--sd);
+    letter-spacing: 1px;
+  }
+  .proposalHead h2 { margin: 0; font-size: 18px; }
+  .proposalHead .tag {
+    font-size: 11px; font-weight: 600; color: var(--accent);
+    background: rgba(59, 130, 246, 0.12); padding: 3px 8px; border-radius: 99px;
+  }
+  .proposal > .desc { margin: 8px 0 0 54px; max-width: 760px; color: var(--text-2); font-size: 13.5px; line-height: 1.8; }
+  .pc { margin: 8px 0 0 54px; display: flex; gap: 8px; flex-wrap: wrap; }
+  .pc span { font-size: 11.5px; padding: 3px 9px; border-radius: 99px; }
+  .pc .pro { color: var(--ok); background: var(--ok-bg); }
+  .pc .con { color: var(--warn); background: var(--warn-bg); }
+  .row { margin: 18px 0 0 54px; display: flex; gap: 22px; flex-wrap: wrap; align-items: flex-start; }
+  .cap { font-size: 11px; color: var(--text-3); text-align: center; margin-top: 10px; }
+
+  /* ── 卡片公共基底（与应用一致） ─────────────────── */
+  .card {
+    width: 300px;
+    background: var(--surface);
+    border-radius: var(--radius);
+    box-shadow: var(--raised-sm);
+    padding: 12px 14px;
+    cursor: pointer;
+    transition: box-shadow .2s ease;
+    font-variant-numeric: tabular-nums;
+  }
+  .card:hover { box-shadow: var(--raised); }
+  .card.selected { box-shadow: 0 0 0 2px var(--accent-ring), var(--inset-sm); }
+  .ic { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
+  .alias { font-size: 15px; font-weight: 600; color: var(--text); }
+  .ip { font-size: 12px; color: var(--text-2); letter-spacing: .2px; }
+  .num { font-variant-numeric: tabular-nums; }
+
+  /* 状态徽章（图标+文字，不只靠颜色） */
+  .pill {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-size: 11px; font-weight: 600; padding: 3px 9px; border-radius: 99px;
+  }
+  .pill.ok   { color: var(--ok);   background: var(--ok-bg); }
+  .pill.warn { color: var(--warn); background: var(--warn-bg); }
+  .pill.bad  { color: var(--bad);  background: var(--bad-bg); }
+  .pill.off  { color: var(--off);  background: var(--off-bg); }
+  .pill.warn .ic, .pill.bad .ic { animation: pulse 1.5s ease-in-out infinite; }
+  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .45; } }
+
+  /* ── 最终选定方案 ── */
+  .f-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .f-ip {
+    display: inline-flex; align-items: center; gap: 7px;
+    font-size: 15px; font-weight: 600; letter-spacing: .2px; color: var(--text);
+  }
+  .f-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .f-ok .f-dot { background: var(--ok-fill); box-shadow: 0 0 0 3px var(--ok-bg); }
+  .f-alert .f-dot { background: var(--warn-fill); box-shadow: 0 0 0 3px var(--warn-bg); animation: pulse 1.5s ease-in-out infinite; }
+  .f-off .f-dot { background: var(--off-fill); }
+  .f-status { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 600; }
+  .f-alert .f-status { color: var(--warn); }
+  .f-alert .f-status .ic { animation: pulse 1.5s ease-in-out infinite; }
+  /* 停用：整卡内容置灰 */
+  .f-off .f-head, .f-off .f-sub, .f-off .f-foot { opacity: .55; }
+  .f-sub {
+    display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin-top: 3px;
+    font-size: 12px; color: var(--text-2); min-width: 0;
+  }
+  .f-alias { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .f-lat { flex-shrink: 0; }
+  .f-sub b { font-weight: 600; color: var(--text); }
+  .f-sep { opacity: .5; }
+  .f-foot {
+    margin-top: 8px; font-size: 10.5px; color: var(--text-3);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .f-foot b { font-weight: 600; color: var(--text-2); }
+
+  /* ── 方案 A：分区精修 ── */
+  .a-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+  .a-top .alias { display: block; }
+  .a-top .ip { display: block; margin-top: 2px; }
+  .a-stats { display: flex; margin-top: 12px; padding-top: 10px; border-top: 1px solid rgba(163, 177, 198, 0.35); }
+  .a-stat { flex: 1; min-width: 0; }
+  .a-stat + .a-stat { border-left: 1px solid rgba(163, 177, 198, 0.35); padding-left: 12px; margin-left: 12px; }
+  .a-stat .k { display: block; font-size: 10px; color: var(--text-3); letter-spacing: .4px; }
+  .a-stat .v { display: block; margin-top: 2px; font-size: 13.5px; font-weight: 600; color: var(--text); }
+  .a-stat .v small { font-size: 10px; font-weight: 500; color: var(--text-3); margin-left: 1px; }
+  .a-stat .v.bad { color: var(--bad); }
+
+  /* ── 方案 B：延迟主视觉 ── */
+  .b-top { display: flex; align-items: center; justify-content: space-between; }
+  .b-main { display: flex; align-items: baseline; justify-content: space-between; margin-top: 10px; }
+  .b-latency { font-size: 30px; font-weight: 700; line-height: 1; letter-spacing: -.5px; }
+  .b-latency small { font-size: 12px; font-weight: 600; color: var(--text-3); margin-left: 3px; letter-spacing: 0; }
+  .b-latency.ok { color: var(--text); }
+  .b-latency.warn { color: var(--warn); }
+  .b-latency.bad { color: var(--bad); }
+  .b-meta { text-align: right; font-size: 11px; color: var(--text-2); line-height: 1.8; }
+  .b-foot { margin-top: 10px; padding-top: 8px; border-top: 1px solid rgba(163, 177, 198, 0.35); font-size: 11px; color: var(--text-3); }
+
+  /* ── 方案 C：左缘状态轨 ── */
+  .c-card { position: relative; padding-left: 20px; overflow: hidden; }
+  .c-rail {
+    position: absolute; left: 0; top: 10px; bottom: 10px; width: 4px; border-radius: 0 4px 4px 0;
+  }
+  .c-rail.ok { background: var(--ok-fill); }
+  .c-rail.warn { background: var(--warn-fill); }
+  .c-rail.bad { background: var(--bad-fill); }
+  .c-rail.off { background: var(--off-fill); }
+  .c-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .c-status { display: inline-flex; align-items: center; gap: 5px; font-size: 11.5px; font-weight: 600; }
+  .c-status.ok { color: var(--ok); } .c-status.warn { color: var(--warn); }
+  .c-status.bad { color: var(--bad); } .c-status.off { color: var(--off); }
+  .c-status.warn .ic, .c-status.bad .ic { animation: pulse 1.5s ease-in-out infinite; }
+  .c-line2 { margin-top: 4px; font-size: 12px; color: var(--text-2); }
+  .c-line2 b { color: var(--text); font-weight: 600; }
+  .c-line3 { margin-top: 8px; font-size: 11px; color: var(--text-3); }
+  .c-line3 b { color: var(--text-2); font-weight: 600; }
+  .c-line3 .sep { margin: 0 5px; opacity: .5; }
+
+  /* ── 方案 D：迷你趋势 ── */
+  .d-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+  .d-id { min-width: 0; }
+  .d-id .alias { display: flex; align-items: center; gap: 6px; }
+  .d-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .d-dot.ok { background: var(--ok-fill); box-shadow: 0 0 0 3px var(--ok-bg); }
+  .d-dot.warn { background: var(--warn-fill); box-shadow: 0 0 0 3px var(--warn-bg); animation: pulse 1.5s ease-in-out infinite; }
+  .d-dot.bad { background: var(--bad-fill); box-shadow: 0 0 0 3px var(--bad-bg); }
+  .d-dot.off { background: var(--off-fill); box-shadow: 0 0 0 3px var(--off-bg); }
+  .spark { width: 72px; height: 28px; flex-shrink: 0; }
+  .spark polyline { fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+  .spark.ok polyline { stroke: var(--accent); }
+  .spark.warn polyline, .spark.bad polyline { stroke: var(--bad-fill); }
+  .spark circle { stroke: none; }
+  .spark.ok circle { fill: var(--accent); }
+  .spark.warn circle, .spark.bad circle { fill: var(--bad-fill); }
+  .d-stats { display: flex; gap: 6px; margin-top: 10px; }
+  .d-chip {
+    font-size: 10.5px; color: var(--text-2); padding: 2px 7px; border-radius: 6px;
+    background: var(--surface); box-shadow: var(--inset-sm); white-space: nowrap;
+  }
+  .d-chip b { color: var(--text); font-weight: 600; }
+  .d-chip.warn { color: var(--warn); }
+  .d-chip.warn b { color: var(--warn); }
+
+  /* ── 方案 E：健康条 ── */
+  .e-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .e-track { margin-top: 11px; height: 8px; border-radius: 99px; box-shadow: var(--inset-sm); overflow: hidden; display: flex; }
+  .e-fill { height: 100%; border-radius: 99px; }
+  .e-fill.ok { width: 99.5%; background: var(--ok-fill); }
+  .e-fill.warn { width: 58%; background: var(--warn-fill); }
+  .e-fill.off { width: 100%; background: var(--off-fill); opacity: .4; }
+  .e-foot { display: flex; justify-content: space-between; margin-top: 8px; font-size: 11px; color: var(--text-3); }
+  .e-foot b { color: var(--text-2); font-weight: 600; }
+  .e-pct { font-weight: 700; }
+  .e-pct.ok { color: var(--ok); } .e-pct.warn { color: var(--warn); } .e-pct.off { color: var(--off); }
+
+  /* ── 对比表 ── */
+  .compare { max-width: 980px; margin: 0 auto; }
+  .compare h2 { font-size: 18px; margin: 0 0 14px; }
+  table { width: 100%; border-collapse: collapse; font-size: 12.5px; background: var(--surface); border-radius: 14px; box-shadow: var(--raised-sm); overflow: hidden; }
+  th, td { padding: 10px 12px; text-align: left; line-height: 1.6; }
+  th { font-size: 11px; color: var(--text-3); letter-spacing: .5px; border-bottom: 1px solid rgba(163, 177, 198, 0.45); }
+  td { border-bottom: 1px solid rgba(163, 177, 198, 0.22); color: var(--text-2); vertical-align: top; }
+  tr:last-child td { border-bottom: none; }
+  td b { color: var(--text); }
+  td .rec { color: var(--ok); font-weight: 700; }
+</style>
+</head>
+<body>
+
+<svg style="display:none" aria-hidden="true">
+  <symbol id="i-ok" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></symbol>
+  <symbol id="i-off" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6M9 9l6 6"/></symbol>
+  <symbol id="i-alert" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></symbol>
+</svg>
+
+<header class="pageHead">
+  <h1>目标卡片优化方案</h1>
+  <p>5 个方向，均基于应用现行的新拟态设计语言（同一表面色、双向柔和阴影、圆角与 hover 凸起），可直接替换现有 <code>TargetCard</code>。每个方案展示「正常」与「告警」两种状态；卡片宽度按左栏实际约 300px 还原。</p>
+  <div class="tokenNote">
+    所有方案共同遵守的三条准则（来自 UX 规范检索）：① 状态不只靠颜色区分，一律「颜色 + 图标 + 文字」；② 正文对比度 ≥ 4.5:1（状态文字统一用深色变体）；③ 所有数值使用等宽数字（tabular-nums），上下对齐不跳动。深色主题下所有颜色由主题 token 派生，切换即适配。
+  </div>
+</header>
+
+<!-- ═══════════ 最终选定方案 ═══════════ -->
+<section class="proposal" id="final">
+  <div class="proposalHead">
+    <span class="no">✓</span>
+    <h2>最终选定设计：C + 状态圆点 + IP 主位</h2>
+    <span class="tag" style="color:#15803d;background:var(--ok-bg)">已确认实现</span>
+  </div>
+  <p class="desc">
+    以方案 C 的三行结构为基础，吸收 D 的状态圆点：IP 前的彩色圆点承载状态，正常态与停用态右上角均留白，仅「告警」出现文字徽章（初版的左缘色轨已移除）。IP 与别名互换：IP 升为主位（粗体），别名退为副行居左、延迟靠右对齐。<strong>停用目标整卡内容置灰（55% 透明度），并在列表中固定沉底、不参与排序竞争</strong>，因此无需任何停用文字标志。告警态第三行显示连续超时次数。以下四张即应用内最终形态。
+  </p>
+  <div class="row">
+    <div>
+      <div class="card f-ok">
+        <div class="f-head">
+          <span class="f-ip num"><span class="f-dot"></span>192.168.1.1</span>
+        </div>
+        <div class="f-sub">
+          <span class="f-alias">核心路由器</span>
+          <span class="f-lat">延迟 <b class="num">12.4 ms</b></span>
+        </div>
+        <div class="f-foot num">发送 <b>1,284</b><span class="f-sep">·</span>丢包 <b>0.5%</b><span class="f-sep">·</span>超时 <b>6</b> 次</div>
+      </div>
+      <div class="cap">正常（右上留白）</div>
+    </div>
+    <div>
+      <div class="card f-alert">
+        <div class="f-head">
+          <span class="f-ip num"><span class="f-dot"></span>10.0.0.21</span>
+          <span class="f-status"><svg class="ic"><use href="#i-alert"/></svg>告警</span>
+        </div>
+        <div class="f-sub">
+          <span class="f-alias">办公室 NAS</span>
+          <span class="f-lat">延迟 <b class="num">—</b></span>
+        </div>
+        <div class="f-foot num">发送 <b>356</b><span class="f-sep">·</span>丢包 <b>42.1%</b><span class="f-sep">·</span>连续超时 <b>42</b> 次</div>
+      </div>
+      <div class="cap">告警</div>
+    </div>
+    <div>
+      <div class="card f-off">
+        <div class="f-head">
+          <span class="f-ip num"><span class="f-dot"></span>172.16.2.1</span>
+        </div>
+        <div class="f-sub">
+          <span class="f-alias">测试网关</span>
+          <span class="f-lat">未探测</span>
+        </div>
+        <div class="f-foot num">发送 <b>0</b><span class="f-sep">·</span>丢包 <b>—</b><span class="f-sep">·</span>超时 <b>—</b></div>
+      </div>
+      <div class="cap">已停用（整卡置灰，固定沉底）</div>
+    </div>
+    <div>
+      <div class="card f-ok selected">
+        <div class="f-head">
+          <span class="f-ip num"><span class="f-dot"></span>10.0.0.5</span>
+        </div>
+        <div class="f-sub">
+          <span class="f-alias">数据库主库</span>
+          <span class="f-lat">延迟 <b class="num">3.8 ms</b></span>
+        </div>
+        <div class="f-foot num">发送 <b>2,041</b><span class="f-sep">·</span>丢包 <b>0.0%</b><span class="f-sep">·</span>超时 <b>0</b> 次</div>
+      </div>
+      <div class="cap">选中态</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ 方案 A ═══════════ -->
+<section class="proposal">
+  <div class="proposalHead">
+    <span class="no">A</span>
+    <h2>分区精修 · 保守改良</h2>
+    <span class="tag">改动最小</span>
+  </div>
+  <p class="desc">
+    保留现有卡片骨架，解决「不清晰」的三个根源：右上角裸图标换成<strong>带文字的状态徽章</strong>（一眼可读，不依赖记忆图标含义）；四个英文小 chip（Avg/Sent/Timeouts/Rate）收敛为<strong>三列「标签在上、数值在下」的对齐微指标</strong>，超时次数并入告警态展示；别名与 IP 的层级通过字号与分隔线拉开。
+  </p>
+  <div class="pc">
+    <span class="pro">信息结构与现状一一对应，迁移零学习成本</span>
+    <span class="pro">指标列纵向对线，扫读快</span>
+    <span class="con">形态上仍是「文本卡片」，视觉记忆点弱</span>
+  </div>
+  <div class="row">
+    <div>
+      <div class="card">
+        <div class="a-top">
+          <span class="a-top-l">
+            <span class="alias">核心路由器</span>
+            <span class="ip num">192.168.1.1</span>
+          </span>
+          <span class="pill ok"><svg class="ic"><use href="#i-ok"/></svg>正常</span>
+        </div>
+        <div class="a-stats">
+          <div class="a-stat"><span class="k">平均延迟</span><span class="v num">12.4<small>ms</small></span></div>
+          <div class="a-stat"><span class="k">发送</span><span class="v num">1,284</span></div>
+          <div class="a-stat"><span class="k">丢包率</span><span class="v num">0.5<small>%</small></span></div>
+        </div>
+      </div>
+      <div class="cap">正常</div>
+    </div>
+    <div>
+      <div class="card">
+        <div class="a-top">
+          <span class="a-top-l">
+            <span class="alias">办公室 NAS</span>
+            <span class="ip num">10.0.0.21</span>
+          </span>
+          <span class="pill warn"><svg class="ic"><use href="#i-alert"/></svg>告警</span>
+        </div>
+        <div class="a-stats">
+          <div class="a-stat"><span class="k">平均延迟</span><span class="v num">—<small>ms</small></span></div>
+          <div class="a-stat"><span class="k">发送</span><span class="v num">356</span></div>
+          <div class="a-stat"><span class="k">丢包率</span><span class="v num bad">42.1<small>%</small></span></div>
+        </div>
+      </div>
+      <div class="cap">告警（连续超时，延迟无有效值）</div>
+    </div>
+    <div>
+      <div class="card">
+        <div class="a-top">
+          <span class="a-top-l">
+            <span class="alias">测试网关</span>
+            <span class="ip num">172.16.2.1</span>
+          </span>
+          <span class="pill off"><svg class="ic"><use href="#i-off"/></svg>已停用</span>
+        </div>
+        <div class="a-stats">
+          <div class="a-stat"><span class="k">平均延迟</span><span class="v num">—<small>ms</small></span></div>
+          <div class="a-stat"><span class="k">发送</span><span class="v num">0</span></div>
+          <div class="a-stat"><span class="k">丢包率</span><span class="v num">—</span></div>
+        </div>
+      </div>
+      <div class="cap">已停用</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ 方案 B ═══════════ -->
+<section class="proposal">
+  <div class="proposalHead">
+    <span class="no">B</span>
+    <h2>延迟主视觉 · 数字优先</h2>
+    <span class="tag">监控工具气质</span>
+  </div>
+  <p class="desc">
+    把「用户最关心的一个数」——当前平均延迟——放大为卡片主视觉（30px 粗体，健康时中性色、告警时变琥珀/红），发送数与丢包率退为右下角次要信息。列表快速下滑时，<strong>视线路径零成本：先看到大数字，再看名字</strong>。适合把 Pingo 当「仪表盘」用的场景。
+  </p>
+  <div class="pc">
+    <span class="pro">一眼读数，视觉层级最直白</span>
+    <span class="pro">大数字天然形成列表节奏感</span>
+    <span class="con">别名退居次要，多目标按名字查找时稍弱</span>
+  </div>
+  <div class="row">
+    <div>
+      <div class="card">
+        <div class="b-top">
+          <span class="alias">核心路由器</span>
+          <span class="pill ok"><svg class="ic"><use href="#i-ok"/></svg>正常</span>
+        </div>
+        <div class="ip num">192.168.1.1</div>
+        <div class="b-main">
+          <span class="b-latency ok num">12.4<small>ms</small></span>
+          <span class="b-meta num">发送 1,284<br>丢包 0.5%</span>
+        </div>
+        <div class="b-foot num">近 1 小时稳定 · 最近 12s 前</div>
+      </div>
+      <div class="cap">正常</div>
+    </div>
+    <div>
+      <div class="card">
+        <div class="b-top">
+          <span class="alias">办公室 NAS</span>
+          <span class="pill warn"><svg class="ic"><use href="#i-alert"/></svg>告警</span>
+        </div>
+        <div class="ip num">10.0.0.21</div>
+        <div class="b-main">
+          <span class="b-latency warn num">—<small>ms</small></span>
+          <span class="b-meta num">发送 356<br>连续超时 42 次</span>
+        </div>
+        <div class="b-foot num">丢包 42.1% · 上次成功 18 分钟前</div>
+      </div>
+      <div class="cap">告警（破折号替代无效延迟，元信息说明原因）</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ 方案 C ═══════════ -->
+<section class="proposal">
+  <div class="proposalHead">
+    <span class="no">C</span>
+    <h2>左缘状态轨 · 三行扫读</h2>
+    <span class="tag" style="color:#15803d;background:var(--ok-bg)">推荐</span>
+  </div>
+  <p class="desc">
+    卡片左缘加一条 4px 圆角<strong>状态色轨</strong>（绿=正常 / 琥珀=告警 / 灰=停用），列表呈「书脊」效果，滚动时哪台出问题<strong>凭余光即可定位</strong>。内容压缩为固定三行：①别名 + 状态文字（图标）②IP + 当前延迟 ③发送/丢包/超时次数。每行职责单一，文本不再挤成小 chip。
+  </p>
+  <div class="pc">
+    <span class="pro">列表扫读性最强，余光可辨状态</span>
+    <span class="pro">三行定高，N 张卡片高度一致、最整齐</span>
+    <span class="con">色轨边缘占用约 6px 横向空间</span>
+  </div>
+  <div class="row">
+    <div>
+      <div class="card c-card">
+        <span class="c-rail ok"></span>
+        <div class="c-head">
+          <span class="alias">核心路由器</span>
+          <span class="c-status ok"><svg class="ic"><use href="#i-ok"/></svg>正常</span>
+        </div>
+        <div class="c-line2 num">192.168.1.1 · 延迟 <b>12.4 ms</b></div>
+        <div class="c-line3 num">发送 <b>1,284</b><span class="sep">·</span>丢包 <b>0.5%</b><span class="sep">·</span>超时 <b>6</b> 次</div>
+      </div>
+      <div class="cap">正常</div>
+    </div>
+    <div>
+      <div class="card c-card">
+        <span class="c-rail warn"></span>
+        <div class="c-head">
+          <span class="alias">办公室 NAS</span>
+          <span class="c-status warn"><svg class="ic"><use href="#i-alert"/></svg>告警</span>
+        </div>
+        <div class="c-line2 num">10.0.0.21 · 延迟 <b>—</b></div>
+        <div class="c-line3 num">发送 <b>356</b><span class="sep">·</span>丢包 <b>42.1%</b><span class="sep">·</span>连续超时 <b>42</b> 次</div>
+      </div>
+      <div class="cap">告警（色轨 + 徽章 + 文字三重冗余）</div>
+    </div>
+    <div>
+      <div class="card c-card">
+        <span class="c-rail off"></span>
+        <div class="c-head">
+          <span class="alias">测试网关</span>
+          <span class="c-status off"><svg class="ic"><use href="#i-off"/></svg>已停用</span>
+        </div>
+        <div class="c-line2 num">172.16.2.1 · 未探测</div>
+        <div class="c-line3 num">发送 <b>0</b><span class="sep">·</span>丢包 <b>—</b><span class="sep">·</span>超时 <b>—</b></div>
+      </div>
+      <div class="cap">已停用（灰轨）</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ 方案 D ═══════════ -->
+<section class="proposal">
+  <div class="proposalHead">
+    <span class="no">D</span>
+    <h2>迷你趋势 · 图形常驻</h2>
+    <span class="tag">信息密度最高</span>
+  </div>
+  <p class="desc">
+    卡片右上角常驻一条 72×28 的<strong>延迟迷你走势</strong>（近 N 个采样，蓝线；告警时转红并在超时处跌底），别名前加状态圆点。文本指标保持一行 chip 但减到三个。相当于把详情页图表「预告片」放进列表，不用点开就能预判趋势——代价是每个卡片多维护一条轻量 SVG。
+  </p>
+  <div class="pc">
+    <span class="pro">不用点开详情即可看趋势，监控价值最高</span>
+    <span class="pro">图形元素提升卡片辨识度与精致感</span>
+    <span class="con">实现成本最高（uPlot 数据复用一条 SVG polyline）</span>
+    <span class="con">卡片高度略增，信息密度接近上限</span>
+  </div>
+  <div class="row">
+    <div>
+      <div class="card">
+        <div class="d-top">
+          <span class="d-id">
+            <span class="alias"><span class="d-dot ok"></span>核心路由器</span>
+            <span class="ip num">192.168.1.1</span>
+          </span>
+          <svg class="spark ok" viewBox="0 0 72 28">
+            <polyline points="2,20 12,18 22,21 32,13 42,16 52,10 62,14 70,8"/>
+            <circle cx="70" cy="8" r="2.4"/>
+          </svg>
+        </div>
+        <div class="d-stats">
+          <span class="d-chip">延迟 <b>12.4 ms</b></span>
+          <span class="d-chip">发送 <b>1,284</b></span>
+          <span class="d-chip">丢包 <b>0.5%</b></span>
+        </div>
+      </div>
+      <div class="cap">正常</div>
+    </div>
+    <div>
+      <div class="card">
+        <div class="d-top">
+          <span class="d-id">
+            <span class="alias"><span class="d-dot warn"></span>办公室 NAS</span>
+            <span class="ip num">10.0.0.21</span>
+          </span>
+          <svg class="spark warn" viewBox="0 0 72 28">
+            <polyline points="2,8 12,9 22,8 32,9 42,8 52,9 58,24 70,25"/>
+            <circle cx="70" cy="25" r="2.4"/>
+          </svg>
+        </div>
+        <div class="d-stats">
+          <span class="d-chip warn">超时 <b>42 次</b></span>
+          <span class="d-chip">发送 <b>356</b></span>
+          <span class="d-chip">丢包 <b>42.1%</b></span>
+        </div>
+      </div>
+      <div class="cap">告警（曲线末端跌底 = 连续超时）</div>
+    </div>
+    <div>
+      <div class="card selected">
+        <div class="d-top">
+          <span class="d-id">
+            <span class="alias"><span class="d-dot ok"></span>数据库主库</span>
+            <span class="ip num">10.0.0.5</span>
+          </span>
+          <svg class="spark ok" viewBox="0 0 72 28">
+            <polyline points="2,18 12,17 22,19 32,15 42,17 52,13 62,15 70,12"/>
+            <circle cx="70" cy="12" r="2.4"/>
+          </svg>
+        </div>
+        <div class="d-stats">
+          <span class="d-chip">延迟 <b>3.8 ms</b></span>
+          <span class="d-chip">发送 <b>2,041</b></span>
+          <span class="d-chip">丢包 <b>0.0%</b></span>
+        </div>
+      </div>
+      <div class="cap">选中态（凹陷 + 强调色描边，与现行一致）</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ 方案 E ═══════════ -->
+<section class="proposal">
+  <div class="proposalHead">
+    <span class="no">E</span>
+    <h2>健康条 · 在线率可视化</h2>
+    <span class="tag">最直观的比例感</span>
+  </div>
+  <p class="desc">
+    把抽象的「丢包率 %」画成一条<strong>内嵌健康条</strong>：绿色填充比例 = 在线率，告警时填充变琥珀且肉眼可见地「缺了一块」，停用时整条置灰。数字信息只留两行：别名 + IP，以及「平均延迟 / 发送数」。适合希望列表<strong>整体像一面状态墙</strong>的审美方向。
+  </p>
+  <div class="pc">
+    <span class="pro">比例可视化最直觉，健康条天然适合列表纵向排列</span>
+    <span class="pro">元素最少，最干净优雅</span>
+    <span class="con">超时次数、趋势等细节需进详情页看</span>
+  </div>
+  <div class="row">
+    <div>
+      <div class="card">
+        <div class="e-head">
+          <span class="alias">核心路由器</span>
+          <span class="pill ok"><svg class="ic"><use href="#i-ok"/></svg>正常</span>
+        </div>
+        <div class="ip num">192.168.1.1</div>
+        <div class="e-track"><span class="e-fill ok"></span></div>
+        <div class="e-foot num">
+          <span>平均 <b>12.4 ms</b> · 发送 <b>1,284</b></span>
+          <span class="e-pct ok">99.5%</span>
+        </div>
+      </div>
+      <div class="cap">正常（绿条 ≈ 在线率 99.5%）</div>
+    </div>
+    <div>
+      <div class="card">
+        <div class="e-head">
+          <span class="alias">办公室 NAS</span>
+          <span class="pill warn"><svg class="ic"><use href="#i-alert"/></svg>告警</span>
+        </div>
+        <div class="ip num">10.0.0.21</div>
+        <div class="e-track"><span class="e-fill warn"></span></div>
+        <div class="e-foot num">
+          <span>平均 <b>—</b> · 发送 <b>356</b></span>
+          <span class="e-pct warn">57.9%</span>
+        </div>
+      </div>
+      <div class="cap">告警（缺口即丢包比例）</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ 对比与建议 ═══════════ -->
+<section class="compare">
+  <h2>对比与建议</h2>
+  <table>
+    <tr><th>方案</th><th>扫读性</th><th>信息密度</th><th>实现成本</th><th>一句话定位</th></tr>
+    <tr>
+      <td><b>A 分区精修</b></td><td>中</td><td>与现状相同</td><td>最低（纯 CSS）</td>
+      <td>不换骨架，只把层级和文本做对</td>
+    </tr>
+    <tr>
+      <td><b>B 延迟主视觉</b></td><td>中高</td><td>低</td><td>低</td>
+      <td>仪表盘式读数，数字即状态</td>
+    </tr>
+    <tr>
+      <td><b>C 左缘状态轨</b></td><td class="rec">最高</td><td>高</td><td>低（一条色轨 + 三行文本）</td>
+      <td>列表书脊化，余光定位故障<span class="rec"> ← 推荐</span></td>
+    </tr>
+    <tr>
+      <td><b>D 迷你趋势</b></td><td>高</td><td class="rec">最高</td><td>中（需接采样数据）</td>
+      <td>详情页图表的列表预览</td>
+    </tr>
+    <tr>
+      <td><b>E 健康条</b></td><td>中高</td><td>低</td><td>低</td>
+      <td>状态墙美学，比例一眼可见</td>
+    </tr>
+  </table>
+  <p class="desc" style="margin:16px 0 0">
+    我的建议：<strong>C 为基础，吸收 D 的状态圆点</strong>（把 C 的右上状态徽章改为「圆点 + 文字」可再省一档视觉重量）。理由：监控工具的第一诉求是「扫一眼发现哪台不对」，C 的色轨在多目标列表下优势最大，且改动几乎纯 CSS；若后续愿意接一条轻量 SVG，再叠加 D 的走势即可平滑升级为「C + D」。
+  </p>
+</section>
+
+</body>
+</html>
