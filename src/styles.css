@@ -936,7 +936,6 @@ button:focus-visible {
 .modalPanel {
   background: var(--theme-cardBackground);
   border-radius: var(--radius-xl);
-  box-shadow: var(--shadow-raised-lg);
   padding: var(--spacing-xl);
   width: 400px;
   max-width: 90vw;
