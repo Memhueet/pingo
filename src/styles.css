@@ -169,14 +169,21 @@ button:focus-visible {
 .topBar {
   height: 72px;
   padding: 0 var(--spacing-xl);
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   align-items: center;
-  justify-content: space-between;
   background: var(--theme-cardBackground);
   box-shadow: 0 4px 14px var(--theme-shadowDark);
   flex-shrink: 0;
   position: relative;
   z-index: var(--z-index-panel);
+}
+
+.topBarLeft {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  min-width: 0;
 }
 
 .topBar .titleSection {
@@ -215,18 +222,18 @@ button:focus-visible {
   display: flex;
   gap: var(--spacing-md);
   align-items: center;
+  justify-self: end;
   flex-shrink: 0;
 }
 
 .toolbarStats {
-  flex: 1;
-  min-width: 0;
+  justify-self: center;
   display: flex;
   align-items: center;
-  justify-content: center;
   gap: var(--spacing-sm);
-  padding: 0 var(--spacing-lg);
+  min-width: 0;
   overflow: hidden;
+  padding: 0 var(--spacing-md);
 }
 
 .statChip {
@@ -327,15 +334,29 @@ button:focus-visible {
   box-shadow: var(--shadow-inset-sm);
 }
 
-/* 显隐切换按钮：可见 = 凹陷 + 强调色（VS Code 高亮语义的新拟态表达） */
-.glassBtn.active {
-  box-shadow: var(--shadow-inset-sm);
+/* 面板显隐切换按钮：无阴影幽灵样式，可见 = 强调色着色 */
+.glassBtn.toggle {
+  background: transparent;
+  box-shadow: none;
+  color: var(--theme-textSecondary);
+}
+
+.glassBtn.toggle:hover:not(:disabled) {
+  background: var(--accent-soft);
+  box-shadow: none;
+  color: var(--theme-text);
+}
+
+.glassBtn.toggle:active:not(:disabled) {
+  box-shadow: none;
+}
+
+.glassBtn.toggle.active {
   color: var(--theme-accent);
 }
 
-.glassBtn.active:hover:not(:disabled),
-.glassBtn.active:active:not(:disabled) {
-  box-shadow: var(--shadow-inset-sm);
+.glassBtn.toggle.active:hover:not(:disabled),
+.glassBtn.toggle.active:active:not(:disabled) {
   color: var(--theme-accent);
 }
 

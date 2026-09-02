@@ -57,9 +57,22 @@ export function Toolbar({
 
   return (
     <header className="topBar">
-      <div className="titleSection">
-        <h1>Pingo</h1>
-        <p>IPv4 延迟监控 {currentFileName && `— ${currentFileName}`}</p>
+      <div className="topBarLeft">
+        {hasActiveFile && (
+          <>
+            <GlassButton
+              icon={PanelLeft}
+              className={`toggle${leftPanelVisible ? " active" : ""}`}
+              onClick={onToggleLeftPanel}
+              title={leftPanelVisible ? "隐藏目标列表" : "显示目标列表"}
+            />
+            <div className="toolbarDivider" />
+          </>
+        )}
+        <div className="titleSection">
+          <h1>Pingo</h1>
+          <p>IPv4 延迟监控 {currentFileName && `— ${currentFileName}`}</p>
+        </div>
       </div>
       {hasActiveFile && (
         <div className="toolbarStats">
@@ -72,50 +85,44 @@ export function Toolbar({
         </div>
       )}
       <div className="toolbarActions">
-        <div className="dropdown" ref={fileRef}>
-          <GlassButton icon={FolderOpen} onClick={() => setFileOpen((v) => !v)}>
-            文件 ▾
-          </GlassButton>
-          {fileOpen && (
-            <div className="dropdownMenu">
-              <button onClick={() => { onNewDataFile(); setFileOpen(false); }}>
-                <Plus size={14} style={{ marginRight: 8 }} />
-                新建监测
-              </button>
-              <button onClick={() => { onOpenDataFile(); setFileOpen(false); }}>
-                <FolderOpen size={14} style={{ marginRight: 8 }} />
-                打开监测
-              </button>
-              <button onClick={() => { onSaveDataFileAs(); setFileOpen(false); }} disabled={!hasActiveFile}>
-                <Download size={14} style={{ marginRight: 8 }} />
-                另存为
-              </button>
-              <div className="dropdownDivider" />
-              <button onClick={() => { onClearHistory(); setFileOpen(false); }} disabled={!hasActiveFile}>
-                清空历史数据
-              </button>
-            </div>
-          )}
-        </div>
-        <GlassButton
-          icon={pingRunning ? Square : Play}
-          onClick={pingRunning ? onStopPing : onStartPing}
-          variant={pingRunning ? "danger" : "primary"}
-        >
-          {pingRunning ? "停止 Ping" : "开始 Ping"}
-        </GlassButton>
         {hasActiveFile && (
           <>
+            <div className="dropdown" ref={fileRef}>
+              <GlassButton icon={FolderOpen} onClick={() => setFileOpen((v) => !v)}>
+                文件 ▾
+              </GlassButton>
+              {fileOpen && (
+                <div className="dropdownMenu">
+                  <button onClick={() => { onNewDataFile(); setFileOpen(false); }}>
+                    <Plus size={14} style={{ marginRight: 8 }} />
+                    新建监测
+                  </button>
+                  <button onClick={() => { onOpenDataFile(); setFileOpen(false); }}>
+                    <FolderOpen size={14} style={{ marginRight: 8 }} />
+                    打开监测
+                  </button>
+                  <button onClick={() => { onSaveDataFileAs(); setFileOpen(false); }} disabled={!hasActiveFile}>
+                    <Download size={14} style={{ marginRight: 8 }} />
+                    另存为
+                  </button>
+                  <div className="dropdownDivider" />
+                  <button onClick={() => { onClearHistory(); setFileOpen(false); }} disabled={!hasActiveFile}>
+                    清空历史数据
+                  </button>
+                </div>
+              )}
+            </div>
+            <GlassButton
+              icon={pingRunning ? Square : Play}
+              onClick={pingRunning ? onStopPing : onStartPing}
+              variant={pingRunning ? "danger" : "primary"}
+            >
+              {pingRunning ? "停止 Ping" : "开始 Ping"}
+            </GlassButton>
             <div className="toolbarDivider" />
             <GlassButton
-              icon={PanelLeft}
-              className={leftPanelVisible ? "active" : ""}
-              onClick={onToggleLeftPanel}
-              title={leftPanelVisible ? "隐藏目标列表" : "显示目标列表"}
-            />
-            <GlassButton
               icon={PanelRight}
-              className={rightPanelVisible ? "active" : ""}
+              className={`toggle${rightPanelVisible ? " active" : ""}`}
               onClick={onToggleRightPanel}
               title={rightPanelVisible ? "隐藏消息动态" : "显示消息动态"}
             />
