@@ -1057,6 +1057,93 @@ button:focus-visible {
   border-top: 1px solid var(--theme-border);
 }
 
+/* 失败退避间隔编辑 */
+.settingsField {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+.settingsFieldHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.settingsFieldHeader > span {
+  color: var(--theme-textSecondary);
+  font-size: var(--font-size-md);
+}
+
+.resetBtn {
+  border: none;
+  background: transparent;
+  color: var(--theme-accent);
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+  padding: 2px 8px;
+  border-radius: var(--radius-sm);
+  transition: background var(--transition-fast);
+}
+
+.resetBtn:hover {
+  background: var(--accent-soft);
+}
+
+.fieldHint {
+  margin: 0;
+  font-size: var(--font-size-xs);
+  color: var(--theme-textSecondary);
+  line-height: 1.6;
+}
+
+.backoffGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--spacing-sm);
+  margin-top: var(--spacing-xs);
+}
+
+.backoffStep {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: var(--spacing-sm);
+  border-radius: var(--radius-md);
+  background: var(--theme-background);
+  box-shadow: var(--shadow-inset-sm);
+}
+
+.backoffStepLabel {
+  font-size: var(--font-size-xs);
+  color: var(--theme-textSecondary);
+}
+
+.backoffStepInput {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.backoffStepInput > span {
+  font-size: var(--font-size-xs);
+  color: var(--theme-textSecondary);
+  flex-shrink: 0;
+}
+
+.modalPanel .backoffStep input {
+  height: 28px;
+  padding: 0 var(--spacing-sm);
+  flex: 1;
+  min-width: 0;
+  background: var(--theme-cardBackground);
+  box-shadow: none;
+}
+
+.modalPanel .backoffStep input:focus {
+  box-shadow: 0 0 0 2px var(--accent-ring);
+}
+
 .settingsSection h4 {
   margin: 0 0 var(--spacing-md);
   font-size: var(--font-size-lg);

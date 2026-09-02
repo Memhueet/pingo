@@ -12,6 +12,27 @@ pub struct AppSettings {
     pub alias_color: String,
     pub ipv4_color: String,
     pub theme_id: String,
+    /// 连续失败 6 次后逐档采用的退避间隔（秒），最后一档封顶
+    #[serde(default = "default_backoff_intervals")]
+    pub backoff_intervals: Vec<u64>,
+}
+
+pub fn default_backoff_intervals() -> Vec<u64> {
+    vec![10, 60, 180, 600, 1800, 3600]
+}
+
+/// 解析逗号分隔的退避阶梯；跳过无法解析的项，不足 6 档用默认值补齐，超出 6 档截断
+pub fn parse_backoff_intervals(raw: &str) -> Vec<u64> {
+    let defaults = default_backoff_intervals();
+    let mut out: Vec<u64> = raw
+        .split(',')
+        .filter_map(|part| part.trim().parse::<u64>().ok())
+        .take(defaults.len())
+        .collect();
+    while out.len() < defaults.len() {
+        out.push(defaults[out.len()]);
+    }
+    out
 }
 
 impl Default for AppSettings {
@@ -24,6 +45,7 @@ impl Default for AppSettings {
             alias_color: "#1f2933".to_string(),
             ipv4_color: "#6b7280".to_string(),
             theme_id: "pure-white".to_string(),
+            backoff_intervals: default_backoff_intervals(),
         }
     }
 }
@@ -95,6 +117,29 @@ mod tests {
         assert_eq!(settings.ping_timeout_seconds, 5);
         assert_eq!(settings.retention_days, 7);
         assert_eq!(settings.alert_threshold, 3);
+        assert_eq!(settings.backoff_intervals, vec![10, 60, 180, 600, 1800, 3600]);
+    }
+
+    #[test]
+    fn parse_backoff_intervals_handles_garbage_and_padding() {
+        assert_eq!(
+            parse_backoff_intervals("15,90,300,900,2700,7200"),
+            vec![15, 90, 300, 900, 2700, 7200]
+        );
+        // 无法解析的项被跳过，缺失的档位按默认值补齐
+        assert_eq!(
+            parse_backoff_intervals("abc,60,,600"),
+            vec![60, 600, 180, 600, 1800, 3600]
+        );
+        assert_eq!(
+            parse_backoff_intervals(""),
+            vec![10, 60, 180, 600, 1800, 3600]
+        );
+        // 超出 6 档截断
+        assert_eq!(
+            parse_backoff_intervals("1,2,3,4,5,6,7,8"),
+            vec![1, 2, 3, 4, 5, 6]
+        );
     }
 
     #[test]

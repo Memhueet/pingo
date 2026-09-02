@@ -26,6 +26,7 @@ import { EventLog } from "./components/EventLog";
 import { applyPingSample, createTargetStatus } from "./state/usePingoStore";
 import { calculateTargetStats } from "./utils/stats";
 import type { AppSettings, Target, TargetSaveData, TargetStatus } from "./types";
+import { defaultBackoffIntervals } from "./types";
 import { isValidIpv4 } from "./validation";
 import { themes, defaultTheme } from "./themes";
 
@@ -37,6 +38,7 @@ const defaultSettings: AppSettings = {
   aliasColor: "#1f2933",
   ipv4Color: "#6b7280",
   themeId: "pure-white",
+  backoffIntervals: [...defaultBackoffIntervals],
 };
 
 export type SortMode = "ip" | "createdAt" | "latency";

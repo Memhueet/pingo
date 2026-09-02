@@ -93,6 +93,10 @@ pub async fn save_settings(
         let mut threshold = state.scheduler.alert_threshold.lock().await;
         *threshold = settings.alert_threshold;
     }
+    {
+        let mut backoff = state.scheduler.backoff_intervals.lock().await;
+        *backoff = settings.backoff_intervals.clone();
+    }
 
     Ok(settings)
 }
@@ -284,6 +288,10 @@ pub async fn switch_data_file(
     let mut threshold = state.scheduler.alert_threshold.lock().await;
     *threshold = settings.alert_threshold;
     drop(threshold);
+
+    let mut backoff = state.scheduler.backoff_intervals.lock().await;
+    *backoff = settings.backoff_intervals.clone();
+    drop(backoff);
 
     Ok(BootstrapPayload {
         settings,

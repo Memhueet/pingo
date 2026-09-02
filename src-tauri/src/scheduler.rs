@@ -12,8 +12,6 @@ use crate::models::*;
 use crate::ping;
 use crate::storage::Storage;
 
-const BACKOFF_INTERVALS: [u64; 6] = [10, 60, 180, 600, 1800, 3600];
-
 #[derive(Debug, Clone, PartialEq, Eq)]
 enum LastReportedStatus {
     None,
@@ -40,12 +38,13 @@ impl Default for TargetPingState {
     }
 }
 
-fn get_backoff_interval(consecutive_timeouts: u32) -> u64 {
+/// 连续失败 1-5 次按正常间隔；第 6 次起按用户配置的退避阶梯逐档放慢，最后一档封顶
+fn get_backoff_interval(consecutive_timeouts: u32, intervals: &[u64]) -> u64 {
     if consecutive_timeouts <= 5 {
         5
     } else {
-        let index = (consecutive_timeouts - 6).min(BACKOFF_INTERVALS.len() as u32 - 1);
-        BACKOFF_INTERVALS[index as usize]
+        let index = (consecutive_timeouts as usize - 6).min(intervals.len() - 1);
+        intervals[index]
     }
 }
 
@@ -55,6 +54,7 @@ pub struct SchedulerState {
     pub interval_seconds: Mutex<u64>,
     pub timeout_seconds: Mutex<u64>,
     pub alert_threshold: Mutex<u32>,
+    pub backoff_intervals: Mutex<Vec<u64>>,
     pub target_states: Mutex<HashMap<Uuid, TargetPingState>>,
     pub data_path: Mutex<String>,
 }
@@ -67,6 +67,7 @@ impl SchedulerState {
             interval_seconds: Mutex::new(settings.ping_interval_seconds),
             timeout_seconds: Mutex::new(settings.ping_timeout_seconds),
             alert_threshold: Mutex::new(settings.alert_threshold),
+            backoff_intervals: Mutex::new(settings.backoff_intervals.clone()),
             target_states: Mutex::new(HashMap::new()),
             data_path: Mutex::new(data_path),
         }
@@ -94,6 +95,7 @@ pub fn start(
             }
 
             let base_interval = *state.interval_seconds.lock().await;
+            let backoff_intervals = state.backoff_intervals.lock().await.clone();
             let data_path = state.data_path.lock().await.clone();
 
             let storage = match Storage::open(data_path) {
@@ -115,7 +117,10 @@ pub fn start(
                 let target_state = target_states.entry(target.id).or_insert_with(Default::default);
 
                 let should_ping = if let Some(last_ping) = target_state.last_ping_time {
-                    let interval = get_backoff_interval(target_state.consecutive_timeouts);
+                    // 退避档位不得小于正常探测间隔，避免异常配置反而加密探测
+                    let interval =
+                        get_backoff_interval(target_state.consecutive_timeouts, &backoff_intervals)
+                            .max(base_interval);
                     (now - last_ping).num_seconds() >= interval as i64
                 } else {
                     true
@@ -197,4 +202,37 @@ pub fn start(
             tokio::time::sleep(Duration::from_secs(base_interval)).await;
         }
     });
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    const LADDER: [u64; 6] = [10, 60, 180, 600, 1800, 3600];
+
+    #[test]
+    fn backoff_uses_normal_interval_before_sixth_failure() {
+        for ct in 0..=5 {
+            assert_eq!(get_backoff_interval(ct, &LADDER), 5);
+        }
+    }
+
+    #[test]
+    fn backoff_escalates_through_configured_ladder() {
+        assert_eq!(get_backoff_interval(6, &LADDER), 10);
+        assert_eq!(get_backoff_interval(7, &LADDER), 60);
+        assert_eq!(get_backoff_interval(10, &LADDER), 1800);
+        assert_eq!(get_backoff_interval(11, &LADDER), 3600);
+    }
+
+    #[test]
+    fn backoff_caps_at_last_ladder_step() {
+        assert_eq!(get_backoff_interval(100, &LADDER), 3600);
+    }
+
+    #[test]
+    fn backoff_works_with_custom_ladder_length() {
+        assert_eq!(get_backoff_interval(7, &[30, 120]), 120);
+        assert_eq!(get_backoff_interval(50, &[30, 120]), 120);
+    }
 }

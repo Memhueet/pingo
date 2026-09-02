@@ -6,7 +6,11 @@ export interface AppSettings {
   aliasColor: string;
   ipv4Color: string;
   themeId: string;
+  /** 连续失败 6 次后逐档采用的退避间隔（秒），最后一档封顶 */
+  backoffIntervals: number[];
 }
+
+export const defaultBackoffIntervals = [10, 60, 180, 600, 1800, 3600];
 
 export interface Target {
   id: string;

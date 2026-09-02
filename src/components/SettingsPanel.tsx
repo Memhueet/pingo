@@ -1,8 +1,20 @@
 import { useState } from "react";
 import type { AppSettings } from "../types";
+import { defaultBackoffIntervals } from "../types";
 import type { SortMode } from "../App";
 import { X, Save, Sun, Moon, Cloud, Sliders, Palette } from "lucide-react";
 import { themes } from "../themes";
+
+function formatDuration(seconds: number): string {
+  if (!Number.isFinite(seconds) || seconds <= 0) return "—";
+  if (seconds < 60) return `${seconds} 秒`;
+  if (seconds < 3600) {
+    const minutes = seconds / 60;
+    return `${Number.isInteger(minutes) ? minutes : minutes.toFixed(1)} 分钟`;
+  }
+  const hours = seconds / 3600;
+  return `${Number.isInteger(hours) ? hours : hours.toFixed(1)} 小时`;
+}
 
 interface SettingsPanelProps {
   settings: AppSettings;
@@ -21,6 +33,13 @@ export function SettingsPanel({ settings, sortMode, onClose, onSave, onSortModeC
   function setNumber(field: keyof AppSettings, value: string) {
     const num = value === "" ? 0 : Number(value);
     setDraft({ ...draft, [field]: num });
+  }
+
+  function setBackoffStep(index: number, value: string) {
+    const num = value === "" ? 0 : Number(value);
+    const next = [...draft.backoffIntervals];
+    next[index] = Number.isFinite(num) && num > 0 ? num : 0;
+    setDraft({ ...draft, backoffIntervals: next });
   }
 
   const getCategoryIcon = (category: string) => {
@@ -123,6 +142,45 @@ export function SettingsPanel({ settings, sortMode, onClose, onSave, onSortModeC
                   onChange={(event) => setNumber("alertThreshold", event.target.value)}
                 />
               </label>
+              <div className="settingsField">
+                <div className="settingsFieldHeader">
+                  <span>失败退避间隔</span>
+                  <button
+                    type="button"
+                    className="resetBtn"
+                    onClick={() =>
+                      setDraft({ ...draft, backoffIntervals: [...defaultBackoffIntervals] })
+                    }
+                  >
+                    恢复默认
+                  </button>
+                </div>
+                <p className="fieldHint">
+                  目标连续失败 6 次后，按以下档位逐级放慢探测频率，最后一档为封顶值
+                </p>
+                <div className="backoffGrid">
+                  {draft.backoffIntervals.map((seconds, index) => (
+                    <div key={index} className="backoffStep">
+                      <span className="backoffStepLabel">
+                        第 {index + 1} 档 · 失败 {6 + index} 次后
+                      </span>
+                      <span className="backoffStepInput">
+                        <input
+                          type="number"
+                          min={1}
+                          value={seconds}
+                          aria-label={`第 ${index + 1} 档退避间隔（秒）`}
+                          onChange={(event) => setBackoffStep(index, event.target.value)}
+                        />
+                        <span>秒</span>
+                      </span>
+                      {formatDuration(seconds) !== `${seconds} 秒` && (
+                        <span className="fieldHint">≈ {formatDuration(seconds)}</span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
           )}
           {activeTab === "appearance" && (

@@ -70,6 +70,11 @@ impl Storage {
             alias_color: get_str(&self.conn, "alias_color", "#1f2933").to_string(),
             ipv4_color: get_str(&self.conn, "ipv4_color", "#6b7280").to_string(),
             theme_id: get_str(&self.conn, "theme_id", "pure-white").to_string(),
+            backoff_intervals: parse_backoff_intervals(&get_str(
+                &self.conn,
+                "backoff_intervals",
+                "10,60,180,600,1800,3600",
+            )),
         })
     }
 
@@ -91,6 +96,15 @@ impl Storage {
             ("alias_color", &settings.alias_color),
             ("ipv4_color", &settings.ipv4_color),
             ("theme_id", &settings.theme_id),
+            (
+                "backoff_intervals",
+                &settings
+                    .backoff_intervals
+                    .iter()
+                    .map(|v| v.to_string())
+                    .collect::<Vec<_>>()
+                    .join(","),
+            ),
         ];
         for (key, value) in &pairs {
             self.conn.execute(
@@ -380,12 +394,18 @@ mod tests {
             ping_timeout_seconds: 3,
             retention_days: 14,
             alert_threshold: 5,
+            backoff_intervals: vec![15, 90, 300, 900, 2700, 7200],
+            ..AppSettings::default()
         };
         storage.save_settings(&settings).unwrap();
         let loaded = storage.get_settings().unwrap();
         assert_eq!(loaded.ping_interval_seconds, 10);
         assert_eq!(loaded.retention_days, 14);
         assert_eq!(loaded.alert_threshold, 5);
+        assert_eq!(
+            loaded.backoff_intervals,
+            vec![15, 90, 300, 900, 2700, 7200]
+        );
     }
 
     #[test]
