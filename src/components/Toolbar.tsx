@@ -2,11 +2,19 @@ import { useEffect, useRef, useState } from "react";
 import { GlassButton } from "./GlassButton";
 import { Play, Square, FolderOpen, Plus, Download, PanelLeft, PanelRight } from "lucide-react";
 
+export interface GlobalStats {
+  total: number;
+  enabled: number;
+  alerting: number;
+  avgLatency: number;
+}
+
 interface ToolbarProps {
   pingRunning: boolean;
   hasActiveFile: boolean;
   leftPanelVisible: boolean;
   rightPanelVisible: boolean;
+  stats: GlobalStats;
   onStartPing: () => void;
   onStopPing: () => void;
   onNewDataFile: () => void;
@@ -23,6 +31,7 @@ export function Toolbar({
   hasActiveFile,
   leftPanelVisible,
   rightPanelVisible,
+  stats,
   onStartPing,
   onStopPing,
   onNewDataFile,
@@ -52,6 +61,16 @@ export function Toolbar({
         <h1>Pingo</h1>
         <p>IPv4 延迟监控 {currentFileName && `— ${currentFileName}`}</p>
       </div>
+      {hasActiveFile && (
+        <div className="toolbarStats">
+          <span className="statChip">目标 {stats.total}</span>
+          <span className="statChip">启用 {stats.enabled}</span>
+          <span className={`statChip${stats.alerting > 0 ? " alerting" : ""}`}>
+            告警 {stats.alerting}
+          </span>
+          <span className="statChip">平均 {stats.avgLatency.toFixed(1)} ms</span>
+        </div>
+      )}
       <div className="toolbarActions">
         <div className="dropdown" ref={fileRef}>
           <GlassButton icon={FolderOpen} onClick={() => setFileOpen((v) => !v)}>

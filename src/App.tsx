@@ -24,6 +24,7 @@ import { TargetGrid } from "./components/TargetGrid";
 import { Toolbar } from "./components/Toolbar";
 import { EventLog } from "./components/EventLog";
 import { applyPingSample, createTargetStatus } from "./state/usePingoStore";
+import { calculateTargetStats } from "./utils/stats";
 import type { AppSettings, Target, TargetSaveData, TargetStatus } from "./types";
 import { isValidIpv4 } from "./validation";
 import { themes, defaultTheme } from "./themes";
@@ -230,6 +231,30 @@ export default function App() {
     () => targets.find((status) => status.target.id === selectedTargetId) ?? null,
     [targets, selectedTargetId],
   );
+
+  const globalStats = useMemo(() => {
+    let enabled = 0;
+    let alerting = 0;
+    let latencySum = 0;
+    let latencyTargetCount = 0;
+    for (const status of targets) {
+      if (status.target.enabled) enabled++;
+      if (status.alerting) alerting++;
+      if (status.target.enabled) {
+        const stats = calculateTargetStats(status.samples);
+        if (stats.successes.length > 0) {
+          latencySum += stats.avgLatency;
+          latencyTargetCount++;
+        }
+      }
+    }
+    return {
+      total: targets.length,
+      enabled,
+      alerting,
+      avgLatency: latencyTargetCount > 0 ? latencySum / latencyTargetCount : 0,
+    };
+  }, [targets]);
 
   const sortedTargets = useMemo(() => {
     const direction = sortDirection === "asc" ? 1 : -1;
@@ -499,6 +524,7 @@ export default function App() {
         hasActiveFile={hasActiveFile}
         leftPanelVisible={leftPanelVisible}
         rightPanelVisible={rightPanelVisible}
+        stats={globalStats}
         onToggleLeftPanel={() => setLeftPanelVisible((v) => !v)}
         onToggleRightPanel={() => setRightPanelVisible((v) => !v)}
         onStartPing={async () => {

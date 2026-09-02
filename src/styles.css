@@ -218,6 +218,32 @@ button:focus-visible {
   flex-shrink: 0;
 }
 
+.toolbarStats {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-sm);
+  padding: 0 var(--spacing-lg);
+  overflow: hidden;
+}
+
+.statChip {
+  padding: 4px 10px;
+  border-radius: var(--radius-sm);
+  background: var(--theme-background);
+  box-shadow: var(--shadow-inset-sm);
+  font-size: var(--font-size-sm);
+  color: var(--theme-textSecondary);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.statChip.alerting {
+  color: var(--theme-alert);
+}
+
 .toolbarActions > * {
   vertical-align: middle;
 }
