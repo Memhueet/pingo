@@ -301,6 +301,26 @@ button:focus-visible {
   box-shadow: var(--shadow-inset-sm);
 }
 
+/* 显隐切换按钮：可见 = 凹陷 + 强调色（VS Code 高亮语义的新拟态表达） */
+.glassBtn.active {
+  box-shadow: var(--shadow-inset-sm);
+  color: var(--theme-accent);
+}
+
+.glassBtn.active:hover:not(:disabled),
+.glassBtn.active:active:not(:disabled) {
+  box-shadow: var(--shadow-inset-sm);
+  color: var(--theme-accent);
+}
+
+.toolbarDivider {
+  width: 1px;
+  height: 22px;
+  background: var(--theme-border);
+  flex-shrink: 0;
+  margin: 0 2px;
+}
+
 /* ---------- 卡片 ---------- */
 
 .glassCard {
@@ -453,49 +473,6 @@ button:focus-visible {
   align-items: center;
   font-size: var(--font-size-md);
   font-weight: var(--font-weight-medium);
-}
-
-.panelToggleBtn {
-  min-width: unset !important;
-  width: 28px !important;
-  height: 28px !important;
-  padding: 0 !important;
-  border: none !important;
-  border-radius: var(--radius-sm) !important;
-  background: var(--theme-cardBackground) !important;
-  color: var(--theme-textSecondary) !important;
-  box-shadow: var(--shadow-raised-sm) !important;
-  font-size: var(--font-size-sm) !important;
-  cursor: pointer;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  transition: box-shadow var(--transition-normal), color var(--transition-fast) !important;
-}
-
-.panelToggleBtn:hover {
-  color: var(--theme-accent) !important;
-}
-
-.panelToggleBtn:active {
-  box-shadow: var(--shadow-inset-sm) !important;
-}
-
-.sideToggleBtn {
-  width: 24px;
-  min-width: 24px;
-  height: 100%;
-  border: none;
-  background: var(--theme-panelBackground);
-  color: var(--theme-textSecondary);
-  cursor: pointer;
-  font-size: var(--font-size-sm);
-  transition: color var(--transition-fast), box-shadow var(--transition-fast);
-}
-
-.sideToggleBtn:hover {
-  color: var(--theme-accent);
-  box-shadow: var(--shadow-inset-sm);
 }
 
 .resizeHandle {

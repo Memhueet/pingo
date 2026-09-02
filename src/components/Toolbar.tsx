@@ -1,28 +1,36 @@
 import { useEffect, useRef, useState } from "react";
 import { GlassButton } from "./GlassButton";
-import { Play, Square, FolderOpen, Plus, Download } from "lucide-react";
+import { Play, Square, FolderOpen, Plus, Download, PanelLeft, PanelRight } from "lucide-react";
 
 interface ToolbarProps {
   pingRunning: boolean;
   hasActiveFile: boolean;
+  leftPanelVisible: boolean;
+  rightPanelVisible: boolean;
   onStartPing: () => void;
   onStopPing: () => void;
   onNewDataFile: () => void;
   onOpenDataFile: () => void;
   onSaveDataFileAs: () => void;
   onClearHistory: () => void;
+  onToggleLeftPanel: () => void;
+  onToggleRightPanel: () => void;
   currentFileName: string;
 }
 
 export function Toolbar({
   pingRunning,
   hasActiveFile,
+  leftPanelVisible,
+  rightPanelVisible,
   onStartPing,
   onStopPing,
   onNewDataFile,
   onOpenDataFile,
   onSaveDataFileAs,
   onClearHistory,
+  onToggleLeftPanel,
+  onToggleRightPanel,
   currentFileName,
 }: ToolbarProps) {
   const [fileOpen, setFileOpen] = useState(false);
@@ -77,6 +85,23 @@ export function Toolbar({
         >
           {pingRunning ? "停止 Ping" : "开始 Ping"}
         </GlassButton>
+        {hasActiveFile && (
+          <>
+            <div className="toolbarDivider" />
+            <GlassButton
+              icon={PanelLeft}
+              className={leftPanelVisible ? "active" : ""}
+              onClick={onToggleLeftPanel}
+              title={leftPanelVisible ? "隐藏目标列表" : "显示目标列表"}
+            />
+            <GlassButton
+              icon={PanelRight}
+              className={rightPanelVisible ? "active" : ""}
+              onClick={onToggleRightPanel}
+              title={rightPanelVisible ? "隐藏消息动态" : "显示消息动态"}
+            />
+          </>
+        )}
       </div>
     </header>
   );

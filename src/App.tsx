@@ -497,6 +497,10 @@ export default function App() {
       <Toolbar
         pingRunning={pingRunning}
         hasActiveFile={hasActiveFile}
+        leftPanelVisible={leftPanelVisible}
+        rightPanelVisible={rightPanelVisible}
+        onToggleLeftPanel={() => setLeftPanelVisible((v) => !v)}
+        onToggleRightPanel={() => setRightPanelVisible((v) => !v)}
         onStartPing={async () => {
           if (!hasActiveFile) {
             alert("请先新建或打开一个监测数据文件");
@@ -548,17 +552,10 @@ export default function App() {
         </div>
       ) : (
         <div className="mainContent">
-        {leftPanelVisible ? (
+        {leftPanelVisible && (
           <aside className="targetListPanel" style={{ width: leftPanelWidth, minWidth: 0 }}>
             <div className="panelHeader">
               <span>目标 ({targets.length})</span>
-              <button
-                className="panelToggleBtn"
-                onClick={() => setLeftPanelVisible(false)}
-                title="隐藏目标列表"
-              >
-                ◀
-              </button>
             </div>
             <TargetGrid
               targets={sortedTargets}
@@ -576,14 +573,6 @@ export default function App() {
               ipv4Color={settings.ipv4Color}
             />
           </aside>
-        ) : (
-          <button
-            className="sideToggleBtn leftToggleBtn"
-            onClick={() => setLeftPanelVisible(true)}
-            title="显示目标列表"
-          >
-            ▶
-          </button>
         )}
 
         {leftPanelVisible && (
@@ -611,21 +600,10 @@ export default function App() {
           />
         )}
 
-        {rightPanelVisible ? (
+        {rightPanelVisible && (
           <aside className="eventLogPanel" style={{ width: rightPanelWidth, minWidth: 0 }}>
-            <EventLog
-              entries={logEntries}
-              onClose={() => setRightPanelVisible(false)}
-            />
+            <EventLog entries={logEntries} />
           </aside>
-        ) : (
-          <button
-            className="sideToggleBtn rightToggleBtn"
-            onClick={() => setRightPanelVisible(true)}
-            title="显示消息动态"
-          >
-            ◀
-          </button>
         )}
         </div>
       )}
