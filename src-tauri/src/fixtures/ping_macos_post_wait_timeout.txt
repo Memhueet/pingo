@@ -1,0 +1,5 @@
+PING 192.168.0.1 (192.168.0.1): 56 data bytes
+
+--- 192.168.0.1 ping statistics ---
+1 packets transmitted, 1 packets received, 0.0% packet loss, 1 packets out of wait time
+round-trip min/avg/max/stddev = 7.733/7.733/7.733/nan ms

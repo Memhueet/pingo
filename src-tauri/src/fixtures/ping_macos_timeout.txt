@@ -1,0 +1,4 @@
+PING 10.0.0.250 (10.0.0.250): 56 data bytes
+
+--- 10.0.0.250 ping statistics ---
+1 packets transmitted, 0 packets received, 100.0% packet loss
