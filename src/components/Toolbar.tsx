@@ -39,7 +39,7 @@ export function Toolbar({
   }, []);
 
   return (
-    <header className={`topBar ${pingRunning ? "pingRunning" : ""}`}>
+    <header className="topBar">
       <div className="titleSection">
         <h1>Pingo</h1>
         <p>IPv4 延迟监控 {currentFileName && `— ${currentFileName}`}</p>
