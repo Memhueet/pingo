@@ -3,7 +3,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::time::Duration;
 
-use chrono::Utc;
+use chrono::{DateTime, Utc};
 use tauri::{AppHandle, Emitter};
 use tokio::sync::Mutex;
 use uuid::Uuid;
@@ -77,6 +77,14 @@ fn get_backoff_interval(consecutive_timeouts: u32, intervals: &[u64]) -> u64 {
     }
 }
 
+/// 保留策略清理每小时最多执行一次；从未清理过（含启动首轮）立即执行
+fn should_cleanup(last: Option<DateTime<Utc>>, now: DateTime<Utc>) -> bool {
+    match last {
+        Some(t) => (now - t) >= chrono::Duration::hours(1),
+        None => true,
+    }
+}
+
 pub struct SchedulerState {
     pub ping_running: AtomicBool,
     pub scheduler_started: AtomicBool,
@@ -86,6 +94,8 @@ pub struct SchedulerState {
     pub backoff_intervals: Mutex<Vec<u64>>,
     pub target_states: Mutex<HashMap<Uuid, TargetPingState>>,
     pub data_path: Mutex<String>,
+    /// 上次保留策略清理时间；None 表示启动后尚未清理过
+    pub last_cleanup: Mutex<Option<DateTime<Utc>>>,
 }
 
 impl SchedulerState {
@@ -99,6 +109,7 @@ impl SchedulerState {
             backoff_intervals: Mutex::new(settings.backoff_intervals.clone()),
             target_states: Mutex::new(HashMap::new()),
             data_path: Mutex::new(data_path),
+            last_cleanup: Mutex::new(None),
         }
     }
 }
@@ -184,9 +195,8 @@ pub fn start(
                     error_kind,
                 };
 
-                let _ = storage.insert_sample(&sample);
-                if let Ok(settings) = storage.get_settings() {
-                    let _ = storage.cleanup_retention(settings.retention_days);
+                if let Err(e) = storage.insert_sample(&sample) {
+                    eprintln!("写入采样失败: {e}");
                 }
 
                 let threshold = *state.alert_threshold.lock().await;
@@ -209,6 +219,24 @@ pub fn start(
             }
 
             drop(target_states);
+
+            // 保留策略清理低频执行：每小时一次，不再跟随每个目标的采样逐条触发
+            {
+                let mut last_cleanup = state.last_cleanup.lock().await;
+                if should_cleanup(*last_cleanup, now) {
+                    *last_cleanup = Some(now);
+                    drop(last_cleanup);
+                    match storage.get_settings() {
+                        Ok(settings) => {
+                            if let Err(e) = storage.cleanup_retention(settings.retention_days) {
+                                eprintln!("历史数据清理失败: {e}");
+                            }
+                        }
+                        Err(e) => eprintln!("读取设置失败，跳过历史数据清理: {e}"),
+                    }
+                }
+            }
+
             tokio::time::sleep(Duration::from_secs(base_interval)).await;
         }
     });
@@ -288,5 +316,16 @@ mod tests {
         let mut state = TargetPingState::default();
         let (alerting, notify, notify_alerting) = state.observe_success();
         assert!(!alerting && !notify && !notify_alerting);
+    }
+
+    #[test]
+    fn cleanup_runs_immediately_then_at_most_hourly() {
+        let now = Utc::now();
+        // 从未清理过（启动首轮）立即执行
+        assert!(should_cleanup(None, now));
+        // 一小时内不重复执行
+        assert!(!should_cleanup(Some(now - chrono::Duration::minutes(30)), now));
+        // 超过一小时再次执行
+        assert!(should_cleanup(Some(now - chrono::Duration::hours(2)), now));
     }
 }
