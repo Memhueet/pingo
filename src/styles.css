@@ -1118,6 +1118,17 @@ button:focus-visible {
   border-top: 1px solid var(--theme-border);
 }
 
+/* 数值输入两列排布，压缩常规页纵向空间 */
+.settingsFieldGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--spacing-md);
+}
+
+.settingsFieldGrid label {
+  margin-top: 0;
+}
+
 /* 失败退避间隔编辑 */
 .settingsField {
   display: flex;

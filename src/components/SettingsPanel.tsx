@@ -142,42 +142,44 @@ export function SettingsPanel({ settings, sortMode, onClose, onSave, onSortModeC
                   <option value="latency">按延迟</option>
                 </select>
               </label>
-              <label>
-                Ping 间隔 (秒)
-                <input
-                  type="number"
-                  min="1"
-                  value={draft.pingIntervalSeconds}
-                  onChange={(event) => setNumber("pingIntervalSeconds", event.target.value)}
-                />
-              </label>
-              <label>
-                Ping 超时 (秒)
-                <input
-                  type="number"
-                  min="1"
-                  value={draft.pingTimeoutSeconds}
-                  onChange={(event) => setNumber("pingTimeoutSeconds", event.target.value)}
-                />
-              </label>
-              <label>
-                历史保留天数
-                <input
-                  type="number"
-                  min="1"
-                  value={draft.retentionDays}
-                  onChange={(event) => setNumber("retentionDays", event.target.value)}
-                />
-              </label>
-              <label>
-                告警阈值
-                <input
-                  type="number"
-                  min="1"
-                  value={draft.alertThreshold}
-                  onChange={(event) => setNumber("alertThreshold", event.target.value)}
-                />
-              </label>
+              <div className="settingsFieldGrid">
+                <label>
+                  Ping 间隔 (秒)
+                  <input
+                    type="number"
+                    min="1"
+                    value={draft.pingIntervalSeconds}
+                    onChange={(event) => setNumber("pingIntervalSeconds", event.target.value)}
+                  />
+                </label>
+                <label>
+                  Ping 超时 (秒)
+                  <input
+                    type="number"
+                    min="1"
+                    value={draft.pingTimeoutSeconds}
+                    onChange={(event) => setNumber("pingTimeoutSeconds", event.target.value)}
+                  />
+                </label>
+                <label>
+                  历史保留天数
+                  <input
+                    type="number"
+                    min="1"
+                    value={draft.retentionDays}
+                    onChange={(event) => setNumber("retentionDays", event.target.value)}
+                  />
+                </label>
+                <label>
+                  告警阈值
+                  <input
+                    type="number"
+                    min="1"
+                    value={draft.alertThreshold}
+                    onChange={(event) => setNumber("alertThreshold", event.target.value)}
+                  />
+                </label>
+              </div>
               <div className="settingsField">
                 <div className="settingsFieldHeader">
                   <span>失败退避间隔</span>
