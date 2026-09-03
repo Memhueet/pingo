@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, useCallback, useRef } from "react";
+import { getCurrentWindow } from "@tauri-apps/api/window";
 import { open } from "@tauri-apps/plugin-dialog";
 import "./styles.css";
 import {
@@ -234,6 +235,12 @@ export default function App() {
         root.style.setProperty(`--theme-${key}`, value);
       }
     });
+    // 让系统标题栏（Windows 原生装饰）跟随主题明暗
+    getCurrentWindow()
+      .setTheme(theme.category === "dark" ? "dark" : "light")
+      .catch(() => {
+        // 旧版系统不支持时忽略
+      });
   }, [theme]);
 
   const selectedTarget = useMemo(
