@@ -4,12 +4,18 @@
 const LEGACY_ALIAS_COLOR = "#1f2933";
 const LEGACY_IPV4_COLOR = "#6b7280";
 
+/** 琥珀棕主题已替换为鲜草绿，旧 id 迁移到新主题 */
+const RENAMED_THEME_IDS: Record<string, string> = {
+  "amber-brown": "grass-green",
+};
+
 /** 空字符串表示别名/IP 文字颜色跟随当前主题 */
 export function normalizeSettings(settings: AppSettings): AppSettings {
   return {
     ...settings,
     aliasColor: settings.aliasColor === LEGACY_ALIAS_COLOR ? "" : settings.aliasColor,
     ipv4Color: settings.ipv4Color === LEGACY_IPV4_COLOR ? "" : settings.ipv4Color,
+    themeId: RENAMED_THEME_IDS[settings.themeId] ?? settings.themeId,
   };
 }
 

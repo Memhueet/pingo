@@ -120,7 +120,7 @@
 | `pure-white` | 纯净白 | 明亮 | ☀️ | 蓝色系 |
 | `dawn-yellow` | 晨曦黄 | 明亮 | ☀️ | 暖黄色系 |
 | `grey-blue` | 灰调蓝 | 中性 | ☁️ | 冷灰色系 |
-| `amber-brown` | 琥珀棕 | 中性 | ☁️ | 棕黄色系 |
+| `grass-green` | 鲜草绿 | 中性 | ☁️ | 草绿色系 |
 | `deep-black` | 深邃黑 | 夜间 | 🌙 | 深色绿调 |
 | `aurora-purple` | 极光紫 | 夜间 | 🌙 | 深紫色调 |
 
