@@ -48,6 +48,9 @@ impl Storage {
 
             CREATE INDEX IF NOT EXISTS idx_samples_target
                 ON ping_samples(target_id, sent_at);
+
+            CREATE INDEX IF NOT EXISTS idx_samples_sent_at
+                ON ping_samples(sent_at);
             ",
         )?;
         Ok(())
@@ -320,6 +323,22 @@ mod tests {
         let h = TestHarness::new();
         let targets = h.storage.list_targets().unwrap();
         assert!(targets.is_empty());
+    }
+
+    #[test]
+    fn init_schema_creates_sent_at_index() {
+        let h = TestHarness::new();
+        // 保留策略清理按 sent_at 全表过滤，必须有单列索引避免扫描
+        let count: i64 = h
+            .storage
+            .conn
+            .query_row(
+                "SELECT COUNT(*) FROM sqlite_master WHERE type = 'index' AND name = 'idx_samples_sent_at'",
+                [],
+                |row| row.get(0),
+            )
+            .unwrap();
+        assert_eq!(count, 1);
     }
 
     #[test]
