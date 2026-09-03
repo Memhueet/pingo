@@ -4,6 +4,7 @@ import { defaultBackoffIntervals } from "../types";
 import type { SortMode } from "../App";
 import { X, Save, Sun, Moon, Cloud, Sliders, Palette, Info } from "lucide-react";
 import { getVersion } from "@tauri-apps/api/app";
+import { openUrl } from "@tauri-apps/plugin-opener";
 import { themes } from "../themes";
 
 function formatDuration(seconds: number): string {
@@ -27,14 +28,25 @@ interface SettingsPanelProps {
 
 type TabType = "general" | "appearance" | "about";
 
+const GITHUB_URL = "https://github.com/Memhueet/pingo";
+
 /** 关于页展示的技术栈与作者资源，位于 public/ 下 */
 const ABOUT_CREDITS = [
   { src: "/react.svg", name: "React", type: "前端" },
-  { src: "/vite.svg", name: "Vite", type: "构建" },
   { src: "/tauri.svg", name: "Tauri", type: "跨平台框架" },
   { src: "/qodercn.png", name: "Qoder CN", type: "Agent" },
-  { src: "/moonway-静谧蓝-nobg.png", name: "Moonway", type: "作者" },
+  { src: "/zcode.png", name: "Zcode", type: "Agent" },
+  { src: "/moonway.png", name: "Moonway", type: "作者" },
 ];
+
+/** GitHub 品牌标记（lucide 已移除品牌图标），路径取自 Simple Icons 官方 */
+function GithubMark({ size = 14 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+      <path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12" />
+    </svg>
+  );
+}
 
 export function SettingsPanel({ settings, sortMode, onClose, onSave, onSortModeChange }: SettingsPanelProps) {
   const [draft, setDraft] = useState({ ...settings });
@@ -301,6 +313,18 @@ export function SettingsPanel({ settings, sortMode, onClose, onSave, onSortModeC
           )}
           {activeTab === "about" && (
             <div className="settingsTabContent aboutTab">
+              <p className="aboutIntro">
+                Pingo 是基于 Tauri 构建的轻量级 IP 可达性与延迟监控跨平台应用，
+                以 MIT 协议开源，欢迎大家贡献代码与反馈问题。
+                <button
+                  type="button"
+                  className="aboutGithubLink"
+                  onClick={() => openUrl(GITHUB_URL).catch(() => {})}
+                >
+                  <GithubMark size={14} />
+                  github.com/Memhueet/pingo
+                </button>
+              </p>
               <div className="aboutCredits">
                 {ABOUT_CREDITS.map((item) => (
                   <div key={item.name} className="aboutCredit">
@@ -311,9 +335,9 @@ export function SettingsPanel({ settings, sortMode, onClose, onSave, onSortModeC
                 ))}
               </div>
               <p className="aboutText">
-                <strong>Pingo</strong> — 轻量的 IPv4 可达性与延迟监控桌面工具
+                <strong>Pingo</strong> —— 轻量的 IP 可达性与延迟监控跨平台应用
                 <span className="aboutTagline">
-                  基于系统 ping 的实时监测 + 连续失败告警的跨平台应用
+                  better than use monitor
                 </span>
                 版本: {appVersion || "—"}
               </p>

@@ -1519,6 +1519,31 @@ button:focus-visible {
   overflow: visible;
 }
 
+.aboutIntro {
+  margin: 0;
+  font-size: var(--font-size-md);
+  color: var(--theme-textSecondary);
+  line-height: 1.8;
+}
+
+.aboutGithubLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: var(--spacing-xs);
+  border: none;
+  background: transparent;
+  padding: 0;
+  color: var(--theme-accent);
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+}
+
+.aboutGithubLink:hover {
+  text-decoration: underline;
+}
+
 .aboutCredits {
   display: flex;
   justify-content: space-between;

@@ -29,6 +29,7 @@
  
      tauri::Builder::default()
          .plugin(tauri_plugin_dialog::init())
+         .plugin(tauri_plugin_opener::init())
          .manage(commands::AppState {
              storage: tokio::sync::Mutex::new(storage),
              scheduler: scheduler_state.clone(),
