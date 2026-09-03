@@ -732,6 +732,13 @@ export default function App() {
             <textarea
               value={batchImportText}
               onChange={(e) => setBatchImportText(e.target.value)}
+              onKeyDown={(e) => {
+                // 多行输入框中裸回车用于换行，Ctrl/⌘+Enter 快捷确认导入
+                if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+                  e.preventDefault();
+                  handleBatchImport();
+                }
+              }}
               placeholder="192.168.1.1
 192.168.1.2,服务器1
 10.0.0.1"

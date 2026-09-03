@@ -14,6 +14,18 @@ export function TargetEditor({ target, onClose, onSave }: TargetEditorProps) {
   const [alias, setAlias] = useState(target?.alias ?? "");
   const [error, setError] = useState<string | null>(null);
 
+  function handleSave() {
+    if (!isValidIpv4(ipv4)) {
+      setError("Only IPv4 addresses are supported in this version.");
+      return;
+    }
+    if (target) {
+      onSave({ id: target.id, ipv4, alias: alias || ipv4 });
+    } else {
+      onSave({ ipv4, alias: alias || ipv4 });
+    }
+  }
+
   return (
     <div className="modalOverlay">
     <div className="modalPanel">
@@ -23,45 +35,42 @@ export function TargetEditor({ target, onClose, onSave }: TargetEditorProps) {
             <X size={18} />
           </button>
         </div>
-        <label>
-          IPv4 地址
-          <input
-            type="text"
-            placeholder="192.168.1.1"
-            value={ipv4}
-            onChange={(event) => setIpv4(event.target.value)}
-          />
-        </label>
-        <label>
-          别名 (可选)
-          <input
-            type="text"
-            placeholder="Router"
-            value={alias}
-            onChange={(event) => setAlias(event.target.value)}
-          />
-        </label>
-        {error ? <div className="formError">{error}</div> : null}
-        <div className="panelActions">
-          <button onClick={onClose}>取消</button>
-          <button
-            onClick={() => {
-              if (!isValidIpv4(ipv4)) {
-                setError("Only IPv4 addresses are supported in this version.");
-                return;
-              }
-              if (target) {
-                onSave({ id: target.id, ipv4, alias: alias || ipv4 });
-              } else {
-                onSave({ ipv4, alias: alias || ipv4 });
-              }
-            }}
-            className="primaryBtn"
-          >
-            <Save size={14} style={{ marginRight: 6 }} />
-            保存
-          </button>
-        </div>
+        {/* 输入框内按回车即提交保存 */}
+        <form
+          onSubmit={(event) => {
+            event.preventDefault();
+            handleSave();
+          }}
+        >
+          <label>
+            IPv4 地址
+            <input
+              type="text"
+              placeholder="192.168.1.1"
+              value={ipv4}
+              onChange={(event) => setIpv4(event.target.value)}
+            />
+          </label>
+          <label>
+            别名 (可选)
+            <input
+              type="text"
+              placeholder="Router"
+              value={alias}
+              onChange={(event) => setAlias(event.target.value)}
+            />
+          </label>
+          {error ? <div className="formError">{error}</div> : null}
+          <div className="panelActions">
+            <button type="button" onClick={onClose}>
+              取消
+            </button>
+            <button type="submit" className="primaryBtn">
+              <Save size={14} style={{ marginRight: 6 }} />
+              保存
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   );
