@@ -1497,3 +1497,75 @@ button:focus-visible {
   justify-content: center;
   font-size: 10px;
 }
+
+/* ---------- 设置弹窗：关于 ---------- */
+
+/* 关于页无滚动内容，放开裁剪让图标 hover 放大不被截断 */
+.settingsContentAbout {
+  overflow: visible;
+}
+
+.aboutCredits {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--spacing-xs);
+}
+
+.aboutCredit {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.aboutCreditIcon {
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+  padding: 4px;
+  box-sizing: border-box;
+  border-radius: var(--radius-md);
+  background: var(--theme-cardBackground);
+  box-shadow: var(--shadow-raised-sm);
+  transition: transform 0.25s ease, box-shadow var(--transition-normal);
+  cursor: pointer;
+}
+
+.aboutCreditIcon:hover {
+  transform: scale(3);
+  box-shadow: var(--shadow-raised-lg);
+  position: relative;
+  z-index: var(--z-index-modal);
+}
+
+.aboutCreditName {
+  margin-top: 2px;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--theme-text);
+  line-height: 1.2;
+}
+
+.aboutCreditType {
+  font-size: var(--font-size-xs);
+  color: var(--theme-textSecondary);
+  line-height: 1;
+}
+
+.aboutText {
+  margin: 0;
+  font-size: var(--font-size-md);
+  color: var(--theme-textSecondary);
+  line-height: 1.8;
+}
+
+.aboutText strong {
+  color: var(--theme-text);
+}
+
+.aboutTagline {
+  display: block;
+  text-align: right;
+}

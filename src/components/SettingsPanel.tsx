@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import type { AppSettings } from "../types";
 import { defaultBackoffIntervals } from "../types";
 import type { SortMode } from "../App";
-import { X, Save, Sun, Moon, Cloud, Sliders, Palette } from "lucide-react";
+import { X, Save, Sun, Moon, Cloud, Sliders, Palette, Info } from "lucide-react";
+import { getVersion } from "@tauri-apps/api/app";
 import { themes } from "../themes";
 
 function formatDuration(seconds: number): string {
@@ -24,11 +25,25 @@ interface SettingsPanelProps {
   onSortModeChange: (mode: SortMode) => void;
 }
 
-type TabType = "general" | "appearance";
+type TabType = "general" | "appearance" | "about";
+
+/** 关于页展示的技术栈与作者资源，位于 public/ 下 */
+const ABOUT_CREDITS = [
+  { src: "/react.svg", name: "React", type: "前端" },
+  { src: "/vite.svg", name: "Vite", type: "构建" },
+  { src: "/tauri.svg", name: "Tauri", type: "跨平台框架" },
+  { src: "/qodercn.png", name: "Qoder CN", type: "Agent" },
+  { src: "/moonway-静谧蓝-nobg.png", name: "Moonway", type: "作者" },
+];
 
 export function SettingsPanel({ settings, sortMode, onClose, onSave, onSortModeChange }: SettingsPanelProps) {
   const [draft, setDraft] = useState({ ...settings });
   const [activeTab, setActiveTab] = useState<TabType>("general");
+  const [appVersion, setAppVersion] = useState("");
+
+  useEffect(() => {
+    getVersion().then(setAppVersion).catch(() => setAppVersion(""));
+  }, []);
 
   // 空字符串 = 跟随主题；色板需要合法色值，非法/为空时回落到主题色
   const theme = themes.find((t) => t.id === draft.themeId) ?? themes[0];
@@ -72,6 +87,7 @@ export function SettingsPanel({ settings, sortMode, onClose, onSave, onSortModeC
   const tabs: { id: TabType; label: string; icon: React.ReactNode }[] = [
     { id: "general", label: "常规", icon: <Sliders size={14} /> },
     { id: "appearance", label: "外观", icon: <Palette size={14} /> },
+    { id: "about", label: "关于", icon: <Info size={14} /> },
   ];
 
   return (
@@ -96,7 +112,7 @@ export function SettingsPanel({ settings, sortMode, onClose, onSave, onSortModeC
             </button>
           ))}
         </div>
-        <div className="settingsContent">
+        <div className={`settingsContent ${activeTab === "about" ? "settingsContentAbout" : ""}`}>
           {activeTab === "general" && (
             <div className="settingsTabContent">
               <label>
@@ -281,6 +297,26 @@ export function SettingsPanel({ settings, sortMode, onClose, onSave, onSortModeC
                   )}
                 </div>
               </label>
+            </div>
+          )}
+          {activeTab === "about" && (
+            <div className="settingsTabContent aboutTab">
+              <div className="aboutCredits">
+                {ABOUT_CREDITS.map((item) => (
+                  <div key={item.name} className="aboutCredit">
+                    <img className="aboutCreditIcon" src={item.src} alt={item.name} />
+                    <span className="aboutCreditName">{item.name}</span>
+                    <span className="aboutCreditType">{item.type}</span>
+                  </div>
+                ))}
+              </div>
+              <p className="aboutText">
+                <strong>Pingo</strong> — 轻量的 IPv4 可达性与延迟监控桌面工具
+                <span className="aboutTagline">
+                  基于系统 ping 的实时监测 + 连续失败告警的跨平台应用
+                </span>
+                版本: {appVersion || "—"}
+              </p>
             </div>
           )}
         </div>
