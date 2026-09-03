@@ -23,20 +23,21 @@ import { TargetEditor } from "./components/TargetEditor";
 import { TargetGrid } from "./components/TargetGrid";
 import { Toolbar } from "./components/Toolbar";
 import { EventLog } from "./components/EventLog";
-import { applyPingSample, createTargetStatus } from "./state/usePingoStore";
+import { applyPingSample, createTargetStatus, normalizeSettings } from "./state/usePingoStore";
 import { calculateTargetStats } from "./utils/stats";
 import type { AppSettings, Target, TargetSaveData, TargetStatus } from "./types";
 import { defaultBackoffIntervals } from "./types";
 import { isValidIpv4 } from "./validation";
-import { themes, defaultTheme } from "./themes";
+import { getThemeById } from "./themes";
 
 const defaultSettings: AppSettings = {
   pingIntervalSeconds: 5,
   pingTimeoutSeconds: 5,
   retentionDays: 7,
   alertThreshold: 3,
-  aliasColor: "#1f2933",
-  ipv4Color: "#6b7280",
+  // 空字符串 = 别名/IP 文字颜色跟随当前主题
+  aliasColor: "",
+  ipv4Color: "",
   themeId: "pure-white",
   backoffIntervals: [...defaultBackoffIntervals],
 };
@@ -139,7 +140,7 @@ export default function App() {
     bootstrap()
       .then((payload) => {
         if (cancelled) return;
-        setSettings(payload.settings);
+        setSettings(normalizeSettings(payload.settings));
         setTargets(payload.targets.map(createTargetStatus));
         setPingRunning(payload.pingRunning);
       })
@@ -219,15 +220,18 @@ export default function App() {
     };
   }, [selectedTargetId, dataFilePath]);
 
+  const theme = useMemo(() => getThemeById(settings.themeId), [settings.themeId]);
+  const effectiveAliasColor = settings.aliasColor || theme.textSecondary;
+  const effectiveIpv4Color = settings.ipv4Color || theme.text;
+
   useEffect(() => {
-    const theme = themes.find((t) => t.id === settings.themeId) || defaultTheme;
     const root = document.documentElement;
     Object.entries(theme).forEach(([key, value]) => {
       if (key !== "id" && key !== "name" && key !== "category") {
         root.style.setProperty(`--theme-${key}`, value);
       }
     });
-  }, [settings.themeId]);
+  }, [theme]);
 
   const selectedTarget = useMemo(
     () => targets.find((status) => status.target.id === selectedTargetId) ?? null,
@@ -435,7 +439,7 @@ export default function App() {
       const filePath = `${dirPath}/${fileName}`;
       const payload = await newDataFile(filePath);
       setTargets(payload.targets.map(createTargetStatus));
-      setSettings(payload.settings);
+      setSettings(normalizeSettings(payload.settings));
       setPingRunning(payload.pingRunning);
       setSelectedTargetId(null);
       setSelectedTargetIds(new Set());
@@ -460,7 +464,7 @@ export default function App() {
       const payload = await switchDataFile(path);
       const initialTargets = payload.targets.map(createTargetStatus);
       setTargets(initialTargets);
-      setSettings(payload.settings);
+      setSettings(normalizeSettings(payload.settings));
       setPingRunning(payload.pingRunning);
       setSelectedTargetId(null);
       setSelectedTargetIds(new Set());
@@ -601,8 +605,8 @@ export default function App() {
               onBatchImport={() => setShowBatchImport(true)}
               onOpenSettings={() => setShowSettings(true)}
               hasActiveFile={hasActiveFile}
-              aliasColor={settings.aliasColor}
-              ipv4Color={settings.ipv4Color}
+              aliasColor={effectiveAliasColor}
+              ipv4Color={effectiveIpv4Color}
             />
           </aside>
         )}
@@ -619,6 +623,7 @@ export default function App() {
             <DetailPanel
               status={selectedTarget}
               pingTimeoutSecs={settings.pingTimeoutSeconds}
+              theme={theme}
             />
           ) : (
             <div className="emptyDetail">选择目标查看详情</div>

@@ -2,13 +2,16 @@ import { useEffect, useRef, useState } from "react";
 import uPlot from "uplot";
 import "uplot/dist/uPlot.min.css";
 import type { PingSample } from "../types";
+import type { Theme } from "../themes";
 
 export function LatencyChart({
   samples,
   pingTimeoutMs,
+  theme,
 }: {
   samples: PingSample[];
   pingTimeoutMs: number;
+  theme: Theme;
 }) {
   const hostRef = useRef<HTMLDivElement | null>(null);
   const chartRef = useRef<uPlot | null>(null);
@@ -53,18 +56,28 @@ export function LatencyChart({
     const data: uPlot.AlignedData = [timestamps, successValues, timeoutValues];
 
     if (!chartRef.current) {
+      const axisColor = theme.textSecondary;
+      const gridColor = theme.border;
       const chart = new uPlot(
         {
           width: chartSize.width,
           height: chartSize.height,
           scales: { x: { time: true } },
-          axes: [{}, { label: "ms" }],
+          axes: [
+            { stroke: axisColor, grid: { stroke: gridColor }, ticks: { stroke: gridColor } },
+            {
+              label: "ms",
+              stroke: axisColor,
+              grid: { stroke: gridColor },
+              ticks: { stroke: gridColor },
+            },
+          ],
           series: [
             {},
             {
               label: "成功 (ms)",
-              stroke: "#2563eb",
-              fill: "#2563eb",
+              stroke: theme.success,
+              fill: theme.success,
               paths: uPlot.paths.bars!({
                 radius: 2,
               }),
@@ -72,8 +85,8 @@ export function LatencyChart({
             },
             {
               label: "超时 (ms)",
-              stroke: "#dc2626",
-              fill: "#dc2626",
+              stroke: theme.timeout,
+              fill: theme.timeout,
               paths: uPlot.paths.bars!({
                 radius: 2,
               }),

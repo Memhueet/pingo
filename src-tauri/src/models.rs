@@ -42,8 +42,9 @@ impl Default for AppSettings {
             ping_timeout_seconds: 5,
             retention_days: 7,
             alert_threshold: 3,
-            alias_color: "#1f2933".to_string(),
-            ipv4_color: "#6b7280".to_string(),
+            // 空字符串 = 别名/IP 文字颜色跟随当前主题
+            alias_color: String::new(),
+            ipv4_color: String::new(),
             theme_id: "pure-white".to_string(),
             backoff_intervals: default_backoff_intervals(),
         }

@@ -1,6 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { DetailPanel } from "../components/DetailPanel";
+import { getThemeById } from "../themes";
 import type { TargetStatus } from "../types";
 
 describe("DetailPanel", () => {
@@ -37,7 +38,13 @@ describe("DetailPanel", () => {
       ],
     };
 
-    render(<DetailPanel status={status} pingTimeoutSecs={5} />);
+    render(
+      <DetailPanel
+        status={status}
+        pingTimeoutSecs={5}
+        theme={getThemeById("pure-white")}
+      />,
+    );
 
     expect(screen.getByText("Router")).toBeTruthy();
     expect(screen.getByText("Average 10.0 ms")).toBeTruthy();

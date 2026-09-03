@@ -30,6 +30,11 @@ export function SettingsPanel({ settings, sortMode, onClose, onSave, onSortModeC
   const [draft, setDraft] = useState({ ...settings });
   const [activeTab, setActiveTab] = useState<TabType>("general");
 
+  // 空字符串 = 跟随主题；色板需要合法色值，非法/为空时回落到主题色
+  const theme = themes.find((t) => t.id === draft.themeId) ?? themes[0];
+  const safeColor = (value: string, fallback: string) =>
+    /^#[0-9a-fA-F]{6}$/.test(value) ? value : fallback;
+
   function setNumber(field: keyof AppSettings, value: string) {
     const num = value === "" ? 0 : Number(value);
     setDraft({ ...draft, [field]: num });
@@ -229,15 +234,25 @@ export function SettingsPanel({ settings, sortMode, onClose, onSave, onSortModeC
                 <div className="colorPickerRow">
                   <input
                     type="color"
-                    value={draft.aliasColor}
+                    value={safeColor(draft.aliasColor, theme.textSecondary)}
                     onChange={(event) => setDraft({ ...draft, aliasColor: event.target.value })}
                   />
                   <input
                     type="text"
                     value={draft.aliasColor}
-                    onChange={(event) => setDraft({ ...draft, aliasColor: event.target.value })}
+                    placeholder="跟随主题"
+                    onChange={(event) => setDraft({ ...draft, aliasColor: event.target.value.trim() })}
                     className="colorInput"
                   />
+                  {draft.aliasColor !== "" && (
+                    <button
+                      type="button"
+                      className="resetBtn"
+                      onClick={() => setDraft({ ...draft, aliasColor: "" })}
+                    >
+                      跟随主题
+                    </button>
+                  )}
                 </div>
               </label>
               <label>
@@ -245,15 +260,25 @@ export function SettingsPanel({ settings, sortMode, onClose, onSave, onSortModeC
                 <div className="colorPickerRow">
                   <input
                     type="color"
-                    value={draft.ipv4Color}
+                    value={safeColor(draft.ipv4Color, theme.text)}
                     onChange={(event) => setDraft({ ...draft, ipv4Color: event.target.value })}
                   />
                   <input
                     type="text"
                     value={draft.ipv4Color}
-                    onChange={(event) => setDraft({ ...draft, ipv4Color: event.target.value })}
+                    placeholder="跟随主题"
+                    onChange={(event) => setDraft({ ...draft, ipv4Color: event.target.value.trim() })}
                     className="colorInput"
                   />
+                  {draft.ipv4Color !== "" && (
+                    <button
+                      type="button"
+                      className="resetBtn"
+                      onClick={() => setDraft({ ...draft, ipv4Color: "" })}
+                    >
+                      跟随主题
+                    </button>
+                  )}
                 </div>
               </label>
             </div>

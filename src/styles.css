@@ -6,8 +6,6 @@
  * 禁止半透明表面、背景模糊与硬边框。
  */
 :root {
-  --color-text-primary: #1f2933;
-  --color-text-secondary: #405166;
   --radius-sm: 8px;
   --radius-md: 10px;
   --radius-lg: 14px;
@@ -45,6 +43,7 @@
   --theme-textSecondary: #4f5e76;
   --theme-border: #cdd6e3;
   --theme-accent: #3b82f6;
+  --theme-accentText: #ffffff;
   --theme-success: #22c55e;
   --theme-timeout: #ef4444;
   --theme-alert: #f59e0b;
@@ -153,7 +152,7 @@ button:focus-visible {
 
 .welcomeBtn.primary {
   background: var(--theme-accent);
-  color: #ffffff;
+  color: var(--theme-accentText);
   box-shadow: 3px 3px 8px color-mix(in srgb, var(--theme-accent) 45%, transparent), -3px -3px 8px var(--theme-shadowLight);
 }
 
@@ -302,7 +301,7 @@ button:focus-visible {
 
 .glassBtn.primary {
   background: var(--theme-accent);
-  color: #ffffff;
+  color: var(--theme-accentText);
   box-shadow: 3px 3px 8px color-mix(in srgb, var(--theme-accent) 45%, transparent), -3px -3px 8px var(--theme-shadowLight);
 }
 
@@ -421,13 +420,13 @@ button:focus-visible {
 
 .panelActions button.primaryBtn {
   background: var(--theme-accent);
-  color: #ffffff;
+  color: var(--theme-accentText);
   box-shadow: 3px 3px 8px color-mix(in srgb, var(--theme-accent) 45%, transparent), -3px -3px 8px var(--theme-shadowLight);
 }
 
 .panelActions button.primaryBtn:hover:not(:disabled) {
   background: color-mix(in srgb, var(--theme-accent) 85%, #000000);
-  color: #ffffff;
+  color: var(--theme-accentText);
   box-shadow: 4px 4px 10px color-mix(in srgb, var(--theme-accent) 50%, transparent), -4px -4px 10px var(--theme-shadowLight);
 }
 
@@ -1084,7 +1083,7 @@ button:focus-visible {
 
 .primaryBtn {
   background: var(--theme-accent);
-  color: #ffffff;
+  color: var(--theme-accentText);
   border: none;
   box-shadow: 3px 3px 8px color-mix(in srgb, var(--theme-accent) 45%, transparent), -3px -3px 8px var(--theme-shadowLight);
 }
@@ -1491,7 +1490,7 @@ button:focus-visible {
   width: 18px;
   height: 18px;
   background: var(--theme-accent);
-  color: #ffffff;
+  color: var(--theme-accentText);
   border-radius: 50%;
   display: flex;
   align-items: center;

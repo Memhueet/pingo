@@ -67,8 +67,8 @@ impl Storage {
             ping_timeout_seconds: get_str(&self.conn, "ping_timeout_seconds", "5").parse().unwrap_or(5),
             retention_days: get_str(&self.conn, "retention_days", "7").parse().unwrap_or(7),
             alert_threshold: get_str(&self.conn, "alert_threshold", "3").parse().unwrap_or(3),
-            alias_color: get_str(&self.conn, "alias_color", "#1f2933").to_string(),
-            ipv4_color: get_str(&self.conn, "ipv4_color", "#6b7280").to_string(),
+            alias_color: get_str(&self.conn, "alias_color", "").to_string(),
+            ipv4_color: get_str(&self.conn, "ipv4_color", "").to_string(),
             theme_id: get_str(&self.conn, "theme_id", "pure-white").to_string(),
             backoff_intervals: parse_backoff_intervals(&get_str(
                 &self.conn,
