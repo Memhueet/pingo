@@ -33,15 +33,23 @@ npm run tauri build                              # 生产构建（桌面安装�
 前端 `src/`：
 
 - `api/tauri.ts` — 后端命令的唯一封装入口。组件不得直接调用 `invoke`，新增后端命令时必须先在此封装并补类型。
-- `state/usePingoStore.ts` — 全局状态与采样聚合逻辑，是前端的核心业务层。
-- `components/` — UI 组件。`GlassCard`/`GlassButton` 是通用视觉容器，其余组件对应一个界面区域（Toolbar / TargetGrid / TargetCard / DetailPanel / LatencyChart / EventLog / TargetEditor / SettingsPanel）。
-- `themes.ts` + `styles.css` — 主题定义与设计令牌。颜色、圆角、阴影一律使用 CSS 变量，禁止在组件里写死色值；新增主题时在 `themes.ts` 补全变量集。
+- `state/usePingoStore.ts` — 全局状态与采样聚合逻辑，是前端的核心业务层；同时承载外观配置的应用级存储（`loadAppearance` / `saveAppearance` / `normalizeSettings`）。
+- `components/` — UI 组件。`GlassCard`/`GlassButton` 是通用视觉容器（新拟态，历史名称保留），其余组件对应一个界面区域（Toolbar / TargetGrid / TargetCard / DetailPanel / LatencyChart / EventLog / TargetEditor / SettingsPanel）。
+- `themes.ts` + `styles.css` — 主题定义与新拟态设计令牌。颜色、阴影、圆角、间距一律使用 CSS 变量，禁止在组件里写死色值；主题令牌共 20 个（表面/文字/状态/图表 `chart*`/新拟态 `shadowLight`+`shadowDark`），新增主题必须补全，并保证亮暗语境下文字可读。
 - `types.ts` — 共享类型；`validation.ts` — IPv4 校验；`utils/stats.ts` — 延迟统计。
 - `__tests__/` — Vitest 测试，配套 `setup.ts`。
 
+### 设置存储边界（重要）
+
+设置分两层，勿混淆：
+
+- **功能设置**（间隔/超时/保留天数/告警阈值/退避阶梯/排序）随数据文件存 SQLite `settings` 表。
+- **外观配置**（`themeId`、`aliasColor`、`ipv4Color`）是**应用级配置**，存 WebView localStorage；数据文件里虽有一份旧值，但加载时一律被 `normalizeSettings` 用应用级值覆盖。保存设置时必须调用 `saveAppearance` 同步。开始页在打开数据文件前依赖该存储呈现上次主题，勿把外观改回仅随数据文件。
+- 主题切换的 effect 除写 `--theme-*` 变量外，还调用 `getCurrentWindow().setTheme()` 同步系统标题栏深浅色；`LatencyChart` 接收 `theme` prop 并以 `theme.id` 为 key 重挂载。
+
 后端 `src-tauri/src/`：
 
-- `commands.rs` — 所有 `#[tauri::command]` 的定义处，新命令必须在此注册并同步更新 `lib.rs` 的 `invoke_handler` 与 `capabilities/` 权限。
+- `commands.rs` — 所有 `#[tauri::command]` 的定义处，新命令必须在此注册并同步更新 `lib.rs` 的 `invoke_handler` 与 `capabilities/` 权限；改 `capabilities/default.json` 后 `gen/schemas/` 会再生成，属提交产物需一并入库。
 - `scheduler.rs` — ping 调度器（并发采集的核心）。
 - `ping/` — `command.rs` 调系统 ping、`parser.rs` 解析输出；解析逻辑的测试样本放 `fixtures/`（Windows 中文输出依赖 `encoding_rs` 解码，改解析器时注意覆盖）。
 - `storage.rs` — SQLite（rusqlite bundled）；`config.rs` — 配置；`models.rs` — 数据模型；`error.rs` — 错误定义。
@@ -51,8 +59,9 @@ npm run tauri build                              # 生产构建（桌面安装�
 ## UI 约定
 
 - 桌面应用审美遵循"简约反装饰"：克制用色、亮暗主题下都要可读，弹窗、字体、圆角遵循现有设计令牌基准（详见 `docs/ui-design.md` 与 `docs/ui-naming-guide.md`）。
+- 视觉体系为新拟态（Soft UI）：全局单色表面，立体感仅由 `shadowLight`/`shadowDark` 双向阴影塑造（凸起 raised / 凹陷 inset）；禁止半透明表面、背景模糊与硬边框装饰（唯一例外：弹窗遮罩 `.modalOverlay`）。
 - 阴影不得与遮罩模糊叠加（弹窗去掉凸起阴影是有意为之，勿"改回"）。
-- 面板显隐采用 VS Code 式顶栏按钮交互；目标卡片以 IP 为主标识。
+- 面板显隐采用 VS Code 式顶栏按钮交互；目标卡片为三行布局，以 IP 为主标识。
 - 需防误触：涉及删除/清空历史等破坏性操作要有确认；WebView 默认右键菜单已禁用，勿重新放开。
 
 ## 提交规范

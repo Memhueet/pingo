@@ -2,112 +2,59 @@
 
 ## 概述
 
-本文档定义了 Pingo 应用的完整 UI 设计规范，包括设计令牌、组件架构、布局系统和交互模式。
+本文档定义 Pingo 应用的 UI 设计规范：新拟态视觉体系、设计令牌、主题系统、组件架构与交互模式。实现以 `src/styles.css` 与 `src/themes.ts` 为准，本文与其冲突时以代码为准。
 
 ---
 
-## 设计令牌（Design Tokens）
+## 设计原则：新拟态（Neumorphism / Soft UI）
 
-### 颜色系统
+1. **单色表面**：背景与元素同色（`--theme-background` = `--theme-panelBackground` = `--theme-cardBackground`），不使用半透明表面。
+2. **光影塑形**：立体感仅由双向阴影塑造——左上高光 `--theme-shadowLight` + 右下暗影 `--theme-shadowDark`：
+   - 凸起（raised）：静止的卡片、按钮、弹窗，使用 `--shadow-raised-sm / -raised / -raised-lg`；
+   - 凹陷（inset）：输入井、按下态，使用 `--shadow-inset / -inset-sm`。
+3. **禁止项**：半透明表面、背景模糊、硬边框装饰。唯一例外是弹窗遮罩 `.modalOverlay`（半透明 + 轻模糊，用于聚焦弹窗），以及 `color-mix` 混黑阴影等派生色。
+4. **对比度**：正文文字与背景对比目标 ≥ 4.5:1；暗色主题使用浅强调色时，强调色上的文字用深色（`accentText` 令牌）。
+5. **克制用色**：大面积使用主题表面色，强调色只用于交互焦点与关键状态，不用作大面积装饰。
 
-| 令牌名称 | 值 | 用途 |
-|---------|-----|------|
-| `--color-primary` | `#2563eb` | 主色调，用于强调和交互元素 |
-| `--color-primary-hover` | `#1d4ed8` | 主色调悬停状态 |
-| `--color-primary-dark` | `#1e40af` | 主色调深色变体 |
-| `--color-primary-light` | `rgba(37, 99, 235, 0.1)` | 主色调浅色背景 |
-| `--color-success` | `#16a34a` | 成功状态色 |
-| `--color-warning` | `#ea580c` | 警告/超时状态色 |
-| `--color-danger` | `#dc2626` | 危险/错误状态色 |
-| `--color-danger-light` | `rgba(220, 38, 38, 0.08)` | 危险色浅色背景 |
-| `--color-info` | `#6b7280` | 信息/禁用状态色 |
-| `--color-text-primary` | `#1f2933` | 主要文字颜色 |
-| `--color-text-secondary` | `#405166` | 次要文字颜色 |
-| `--color-text-muted` | `#65758b` | 弱化文字颜色 |
-| `--color-text-light` | `#94a3b8` | 最浅色文字 |
-| `--color-bg-primary` | `#e8edf3` | 主背景色 |
-| `--color-bg-secondary` | `#f6f8fb` | 次要背景色 |
-| `--color-bg-card` | `rgba(255, 255, 255, 0.7)` | 卡片背景（玻璃态） |
-| `--color-bg-card-hover` | `rgba(255, 255, 255, 0.8)` | 卡片悬停背景 |
-| `--color-bg-blur` | `rgba(255, 255, 255, 0.95)` | 模态框背景 |
-| `--color-border` | `rgba(255, 255, 255, 0.5)` | 卡片边框 |
-| `--color-border-muted` | `rgba(216, 224, 232, 0.5)` | 输入框/分割线边框 |
-| `--color-border-focus` | `#2563eb` | 焦点状态边框 |
-| `--color-shadow` | `rgba(31, 41, 55, 0.08)` | 基础阴影 |
-| `--color-shadow-hover` | `rgba(31, 41, 55, 0.12)` | 悬停阴影 |
-| `--color-shadow-lg` | `rgba(31, 41, 55, 0.15)` | 大阴影 |
-| `--color-shadow-xl` | `rgba(31, 41, 55, 0.2)` | 超大阴影 |
+---
 
-### 主题颜色变量
+## 设计令牌（`:root`）
 
-| 变量名 | 默认值 | 用途 |
-|-------|--------|------|
-| `--theme-background` | `#ffffff` | 主题背景色 |
-| `--theme-panelBackground` | `#f8fafc` | 面板背景色 |
-| `--theme-cardBackground` | `rgba(255, 255, 255, 0.85)` | 卡片背景色 |
-| `--theme-text` | `#1e293b` | 主文字颜色 |
-| `--theme-textSecondary` | `#64748b` | 次要文字颜色 |
-| `--theme-border` | `#e2e8f0` | 边框颜色 |
-| `--theme-accent` | `#3b82f6` | 主题强调色 |
-| `--theme-success` | `#22c55e` | 成功状态色 |
-| `--theme-timeout` | `#ef4444` | 超时状态色 |
-| `--theme-alert` | `#f59e0b` | 告警状态色 |
-
-### 间距系统
+### 基础令牌
 
 | 令牌名称 | 值 | 用途 |
 |---------|-----|------|
-| `--spacing-xs` | `4px` | 极小间距 |
-| `--spacing-sm` | `8px` | 小间距 |
-| `--spacing-md` | `12px` | 中等间距 |
-| `--spacing-lg` | `16px` | 大间距 |
-| `--spacing-xl` | `24px` | 超大间距 |
-| `--spacing-2xl` | `32px` | 极大间距 |
-
-### 圆角系统
-
-| 令牌名称 | 值 | 用途 |
-|---------|-----|------|
-| `--radius-sm` | `6px` | 小按钮、输入框 |
-| `--radius-md` | `8px` | 按钮、卡片内元素 |
-| `--radius-lg` | `12px` | 卡片、下拉菜单 |
+| `--radius-sm` | `8px` | 小按钮、输入框 |
+| `--radius-md` | `10px` | 按钮、卡片内元素 |
+| `--radius-lg` | `14px` | 卡片、下拉菜单 |
 | `--radius-xl` | `16px` | 模态框、详情面板 |
-| `--radius-2xl` | `20px` | 欢迎卡片 |
-
-### 字体系统
-
-| 令牌名称 | 值 | 用途 |
-|---------|-----|------|
+| `--radius-2xl` | `22px` | 欢迎卡片 |
+| `--spacing-xs` … `--spacing-2xl` | `4 / 8 / 12 / 16 / 24 / 32px` | 间距阶梯 |
 | `--font-family` | Inter, system-ui | 全局字体 |
-| `--font-size-xs` | `10px` | 极小文字（标签） |
-| `--font-size-sm` | `12px` | 小文字（统计数据） |
-| `--font-size-md` | `13px` | 中等文字（正文） |
-| `--font-size-lg` | `14px` | 大文字（按钮、标题） |
-| `--font-size-xl` | `16px` | 超大文字（副标题） |
-| `--font-size-2xl` | `18px` | 极大文字（面板标题） |
-| `--font-size-3xl` | `22px` | 页面标题 |
-| `--font-size-4xl` | `36px` | 欢迎页标题 |
-| `--font-weight-normal` | `400` | 常规字重 |
-| `--font-weight-medium` | `500` | 中等字重 |
-| `--font-weight-semibold` | `600` | 半粗体 |
-
-### 过渡与模糊
-
-| 令牌名称 | 值 | 用途 |
-|---------|-----|------|
-| `--transition-fast` | `0.15s ease` | 快速过渡（resize） |
+| `--font-size-xs` … `--font-size-4xl` | `10 / 12 / 13 / 14 / 16 / 18 / 22 / 36px` | 字号阶梯 |
+| `--font-weight-normal / medium / semibold` | `400 / 500 / 600` | 字重 |
+| `--transition-fast` | `0.15s ease` | 快速过渡（面板拖拽） |
 | `--transition-normal` | `0.2s ease` | 标准过渡（悬停、动画） |
-| `--backdrop-blur-sm` | `blur(10px)` | 轻微模糊 |
-| `--backdrop-blur-md` | `blur(15px)` | 中等模糊 |
-| `--backdrop-blur-lg` | `blur(20px)` | 强模糊 |
+| `--z-index-dropdown / -panel / -modal` | `100 / 200 / 1000` | 下拉 / 面板 / 弹窗层级 |
 
-### Z-index 层级
+### 新拟态光影组合
 
-| 令牌名称 | 值 | 用途 |
-|---------|-----|------|
-| `--z-index-dropdown` | `100` | 下拉菜单 |
-| `--z-index-panel` | `200` | 工具栏、面板 |
-| `--z-index-modal` | `1000` | 模态框、右键菜单 |
+```css
+--shadow-raised-sm:  3px 3px 7px var(--theme-shadowDark), -3px -3px 7px var(--theme-shadowLight);
+--shadow-raised:     6px 6px 14px …（同上比例放大）;
+--shadow-raised-lg: 10px 10px 24px …;
+--shadow-inset:      inset 3px 3px 7px dark, inset -3px -3px 7px light;
+--shadow-inset-sm:   inset 2px 2px 5px dark, inset -2px -2px 5px light;
+--accent-soft: color-mix(in srgb, var(--theme-accent) 12%, transparent);
+--accent-ring: color-mix(in srgb, var(--theme-accent) 55%, transparent);
+```
+
+### 主题变量（`--theme-*`）
+
+`:root` 内置纯净白回退值，运行时由 `themes.ts` 的主题对象逐键覆写：
+`background、panelBackground、cardBackground、text、textSecondary、border、accent、accentText、success、timeout、alert、chartSuccess、chartTimeout、chartAxis、chartGrid、shadowLight、shadowDark`。
+
+界面颜色一律使用 `var(--theme-*)`，禁止在组件样式里写死色值。
 
 ---
 
@@ -115,14 +62,14 @@
 
 ### 主题列表
 
-| 主题 ID | 名称 | 分类 | 图标 | 主色调 |
-|---------|------|------|------|--------|
-| `pure-white` | 纯净白 | 明亮 | ☀️ | 蓝色系 |
-| `dawn-yellow` | 晨曦黄 | 明亮 | ☀️ | 暖黄色系 |
-| `grey-blue` | 灰调蓝 | 中性 | ☁️ | 冷灰色系 |
-| `grass-green` | 鲜草绿 | 中性 | ☁️ | 深焙森林绿（琥珀强调） |
-| `deep-black` | 深邃黑 | 夜间 | 🌙 | 深色绿调 |
-| `aurora-purple` | 极光紫 | 夜间 | 🌙 | 深紫色调 |
+| 主题 ID | 名称 | 分类 | 基调 |
+|---------|------|------|------|
+| `pure-white` | 纯净白 | light | 雾蓝白表面，蓝强调 |
+| `sunrise` | 晨曦黄 | light | 暖纸黄表面，橘强调 |
+| `gray-blue` | 灰调蓝 | neutral | 冷灰蓝表面，深海蓝强调 |
+| `grass-green` | 鲜草绿 | neutral | 深焙森林绿表面，琥珀强调（参照 caffeel neutral 配色） |
+| `deep-black` | 深邃黑 | dark | 石墨黑表面，天蓝强调 |
+| `aurora-purple` | 极光紫 | dark | 深紫表面，浅紫强调 |
 
 ### 主题配置结构
 
@@ -138,25 +85,34 @@ interface Theme {
   textSecondary: string;
   border: string;
   accent: string;
+  /** 强调色底色上的文字颜色：亮色主题用白，暗色主题的浅强调色配深色文字 */
+  accentText: string;
   success: string;
   timeout: string;
   alert: string;
+  /** 图表：成功延迟柱色（每主题单独设计，可与状态色不同） */
+  chartSuccess: string;
+  /** 图表：超时柱色 */
+  chartTimeout: string;
+  /** 图表：坐标轴与刻度文字色 */
+  chartAxis: string;
+  /** 图表：网格线色 */
+  chartGrid: string;
+  /** 新拟态：左上光源高光色 */
+  shadowLight: string;
+  /** 新拟态：右下暗影色 */
+  shadowDark: string;
 }
 ```
 
-### 主题实现机制
+新增主题时必须补全全部令牌，并保证亮暗两套语境下文字均可读。
 
-1. **存储方式**：主题 ID 保存在后端数据库（与别名颜色、IP 颜色相同方式）
-2. **应用方式**：通过 `useEffect` 监听 `settings.themeId` 变化，动态设置 CSS 变量
-3. **切换效果**：切换主题时，界面平滑过渡，所有使用 `--theme-*` 变量的元素自动更新
+### 实现机制
 
-### 主题预览设计
-
-每个主题卡片包含：
-- **实时预览**：显示颜色圆点和卡片预览
-- **主题名称**：中文名称
-- **分类标识**：☀️ 明亮 / ☁️ 中性 / 🌙 夜间
-- **选中状态**：勾选标记
+1. **存储**：外观配置（`themeId`、`aliasColor`、`ipv4Color`）是**应用级配置**，保存在 WebView 的 localStorage（`src/state/usePingoStore.ts` 的 `loadAppearance` / `saveAppearance`），不随数据文件走；数据文件内虽也存有一份，但加载时会被应用级值覆盖。功能类设置（间隔、超时、保留天数、阈值、退避）随数据文件存储。
+2. **应用**：`App.tsx` 的 effect 遍历主题对象写入 `--theme-*` CSS 变量；同时调用 `getCurrentWindow().setTheme()` 将系统标题栏设为对应深/浅色（Windows 原生装饰跟随）。
+3. **图表**：`LatencyChart` 接收 `theme` prop，坐标轴/网格/柱色取 `chartAxis / chartGrid / chartSuccess / chartTimeout`；切换主题时以 `theme.id` 为 key 重挂载，确保 uPlot 以新配色重绘。
+4. **开始页**：启动首帧同步读取应用级外观，欢迎页（未打开数据文件时）即呈现上次主题，无闪白。
 
 ---
 
@@ -166,33 +122,26 @@ interface Theme {
 
 | 组件 | 路径 | 说明 |
 |-----|------|------|
-| `GlassCard` | `src/components/GlassCard.tsx` | 玻璃态卡片容器，支持选中/多选状态 |
-| `GlassButton` | `src/components/GlassButton.tsx` | 玻璃态按钮，支持三种变体（primary/secondary/danger） |
+| `GlassCard` | `src/components/GlassCard.tsx` | 新拟态卡片容器（历史名称保留），支持选中/多选状态 |
+| `GlassButton` | `src/components/GlassButton.tsx` | 新拟态按钮：静止凸起（raised），按下转凹陷（inset），primary/secondary/danger 变体 |
 
 ### 布局组件
 
 | 组件 | 路径 | 说明 |
 |-----|------|------|
-| `Toolbar` | `src/components/Toolbar.tsx` | 顶部工具栏，包含文件操作和启动/停止控制 |
-| `TargetGrid` | `src/components/TargetGrid.tsx` | 目标网格容器，包含浮动操作按钮和排序控制 |
-| `DetailPanel` | `src/components/DetailPanel.tsx` | 详情面板，展示选中目标的统计和图表 |
+| `Toolbar` | `src/components/Toolbar.tsx` | 顶部工具栏：文件操作、全局统计（目标/启用/告警/平均延迟，窗口居中）、开始/停止 Ping、左右面板切换；开始页隐藏文件与 Ping 按钮 |
+| `TargetGrid` | `src/components/TargetGrid.tsx` | 目标网格容器，含浮动操作按钮组与排序控制 |
+| `DetailPanel` | `src/components/DetailPanel.tsx` | 详情面板，展示选中目标的统计与延迟图表 |
 | `EventLog` | `src/components/EventLog.tsx` | 消息动态面板，实时显示事件日志 |
 
 ### 功能组件
 
 | 组件 | 路径 | 说明 |
 |-----|------|------|
-| `TargetCard` | `src/components/TargetCard.tsx` | 单个目标卡片，展示状态和统计 |
-| `LatencyChart` | `src/components/LatencyChart.tsx` | 延迟图表，使用 uPlot 实现 |
-| `SettingsPanel` | `src/components/SettingsPanel.tsx` | 设置面板模态框（含标签页分组） |
-| `TargetEditor` | `src/components/TargetEditor.tsx` | 目标编辑模态框 |
-
-### 工具函数
-
-| 文件 | 路径 | 说明 |
-|-----|------|------|
-| `stats.ts` | `src/utils/stats.ts` | 统一统计计算逻辑（平均延迟、最大延迟、超时率等） |
-| `themes.ts` | `src/themes.ts` | 主题配置定义（6套皮肤） |
+| `TargetCard` | `src/components/TargetCard.tsx` | 目标卡片，三行布局：IP（主标识，含状态圆点）/ 别名 / 延迟（右对齐）；停用目标整卡置灰并固定沉底 |
+| `LatencyChart` | `src/components/LatencyChart.tsx` | 延迟柱状图（uPlot），配色逐主题令牌化 |
+| `SettingsPanel` | `src/components/SettingsPanel.tsx` | 设置弹窗（常规/外观/关于三标签页，固定高度防切换跳变） |
+| `TargetEditor` | `src/components/TargetEditor.tsx` | 目标添加/编辑弹窗（`<form>` 提交，回车即保存） |
 
 ---
 
@@ -202,7 +151,7 @@ interface Theme {
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                      Toolbar (顶部工具栏)                    │
+│        Toolbar（文件菜单 · 全局统计 · 开始/停止 · 面板切换）      │
 ├─────────────┬─────────────────────────┬─────────────────────┤
 │             │                         │                     │
 │  TargetGrid │      DetailPanel        │    EventLog         │
@@ -213,12 +162,14 @@ interface Theme {
 └─────────────┴─────────────────────────┴─────────────────────┘
 ```
 
+未打开数据文件时显示欢迎页（选择新建工作空间或打开数据文件）。
+
 ### 响应式规则
 
-- 左侧面板宽度：200px - 600px（可拖拽调整）
-- 右侧面板宽度：200px - 500px（可拖拽调整）
-- 面板可通过切换按钮完全隐藏
-- 模态框最大宽度：90vw
+- 左侧面板宽度：200px - 600px（拖拽边界调整）
+- 右侧面板宽度：200px - 500px（拖拽边界调整）
+- 面板可通过顶栏按钮完全隐藏（VS Code 式交互）
+- 弹窗最大宽度：90vw；设置弹窗固定高度 580px，切换标签页不跳变
 
 ---
 
@@ -239,39 +190,40 @@ interface Theme {
 | 单目标 | 编辑、启用/禁用、删除 |
 | 多目标 | 批量启用、批量禁用、批量删除 |
 
+WebView 默认右键菜单已禁用（防误触 Reload），勿重新放开。
+
 ### 浮动按钮组
 
-位于 TargetGrid 底部，包含 4 个按钮（从左到右）：
+位于 TargetGrid 底部（sticky），从左到右：
 
 | 按钮 | 图标 | 变体 | 功能 |
 |-----|------|------|------|
 | 添加目标 | Plus | primary | 打开目标编辑器 |
-| 批量导入 | Upload | secondary | 打开批量导入面板 |
+| 批量导入 | Upload | secondary | 打开批量导入弹窗 |
 | 排序方向 | ArrowUpDown | secondary | 切换升序/降序 |
 | 设置 | Settings | secondary | 打开设置面板 |
 
-按钮组使用 `sticky` 定位，始终浮动在目标网格面板底部。
+### 键盘快捷
+
+| 场景 | 按键 | 行为 |
+|-----|------|------|
+| 目标编辑器 | Enter | 保存（`<form>` 提交） |
+| 批量导入 | Ctrl/⌘ + Enter | 确认导入（裸 Enter 需保留换行，故用组合键） |
 
 ### 设置面板标签页
 
-设置面板使用标签页分组，避免内容过长：
+| 标签页 | 内容 |
+|-------|------|
+| 常规 | 排序方式、Ping 间隔、Ping 超时、历史保留天数、告警阈值、失败退避阶梯（逐档可视化编辑） |
+| 外观 | 主题选择、别名颜色、IP 地址颜色 |
+| 关于 | 项目介绍、GitHub 链接、版本号、技术栈致谢图标 |
 
-| 标签页 | 图标 | 内容 |
-|-------|------|------|
-| 常规 | Sliders | 排序方式、Ping 间隔、Ping 超时、历史保留天数、告警阈值 |
-| 外观 | Palette | 主题皮肤选择、别名颜色、IP 地址颜色 |
+设置弹窗无改动时保存按钮置灰（dirty check），避免空写数据库。
 
 ### 模态框交互
 
-所有模态框（目标编辑器、设置面板、批量导入）的关闭方式：
-
-| 关闭方式 | 说明 |
-|---------|------|
-| 确定/保存按钮 | 确认操作后自动关闭 |
-| 取消按钮 | 放弃操作并关闭 |
-| 关闭图标 (X) | 点击右上角关闭按钮 |
-
-**注意**：点击模态框外部区域不会关闭窗口，必须通过上述按钮操作。
+- 通过确定/保存、取消、右上角关闭按钮关闭；点击遮罩不关闭。
+- 删除目标、清空历史等破坏性操作必须有确认。
 
 ---
 
@@ -279,53 +231,37 @@ interface Theme {
 
 ### 目标状态
 
-| 状态 | 图标 | 颜色 | 动画 |
-|-----|------|------|------|
-| 启用 | ✅ CheckCircle | `--theme-success` | 无 |
-| 禁用 | ❌ XCircle | `--theme-textSecondary` | 无 |
-| 告警 | ⚠️ AlertCircle | `--theme-alert` | 脉冲动画 |
+| 状态 | 表现 |
+|-----|------|
+| 在线 | 状态圆点 `--theme-success` |
+| 超时 | 状态圆点/延迟值 `--theme-timeout` |
+| 告警 | `--theme-alert`，脉冲动画 |
+| 停用 | 整卡置灰，固定排序列表底部 |
 
-### 日志类型
+### 日志类型（EventLog）
 
-| 类型 | 颜色 |
+| 类型 | 文字颜色 |
 |-----|------|
 | success | `--theme-success` |
-| timeout | `--theme-timeout` |
-| error | `--theme-accent` |
-| info | `--theme-textSecondary` |
-
----
-
-## Ping 运行状态
-
-当 Ping 监控运行时，工具栏显示：
-- 渐变背景：绿色主题
-- 流动动画：从左向右的光泽效果
-- 文字颜色：白色
+| timeout | `--theme-alert` |
+| error | `--theme-timeout` |
+| info | `--theme-accent` |
 
 ---
 
 ## 代码规范
 
-### CSS 命名规范
+### CSS
 
-- 使用 BEM 风格的类名（如 `.targetCard`, `.targetCardBody`）
-- 所有硬编码值替换为设计令牌
-- 避免使用 `!important`（除特殊情况）
-- 界面颜色使用 `--theme-*` 变量，支持主题切换
+- 扁平 BEM 风格类名（如 `.targetCard`、`.detailHeader`、`.eventLogEntry`）。
+- 颜色一律使用 `var(--theme-*)` 与令牌化阴影，禁止写死色值（例外：弹窗遮罩 rgba、`color-mix` 派生色）。
+- 间距、圆角、字号、过渡使用 `:root` 令牌，不写魔数。
 
-### 组件规范
+### 组件
 
-- 使用 TypeScript 接口定义 Props
-- 事件处理器命名：`onAction` 格式
-- 计算逻辑提取到工具函数或自定义 Hooks
-- 避免组件间重复逻辑（使用 `utils/stats.ts` 统一计算）
-
-### 性能优化
-
-- 右键菜单中缓存目标查找结果，避免重复 `find` 操作
-- 使用 `useMemo` 缓存排序后的目标列表
-- 使用 `ResizeObserver` 监听图表容器大小变化
+- TypeScript 接口定义 Props；事件处理器 `onAction` 命名。
+- 统计计算统一走 `src/utils/stats.ts`，不在组件内重复实现。
+- 性能：`useMemo` 缓存排序结果，右键菜单缓存目标查找，`ResizeObserver` 监听图表容器。
 
 ---
 
@@ -334,33 +270,22 @@ interface Theme {
 ```
 src/
 ├── components/
-│   ├── GlassCard.tsx          # 玻璃态卡片
-│   ├── GlassButton.tsx        # 玻璃态按钮
-│   ├── TargetCard.tsx         # 目标卡片
-│   ├── TargetGrid.tsx         # 目标网格
+│   ├── GlassCard.tsx          # 新拟态卡片容器
+│   ├── GlassButton.tsx        # 新拟态按钮
+│   ├── TargetCard.tsx         # 目标卡片（三行布局）
+│   ├── TargetGrid.tsx         # 目标网格 + 浮动按钮组
 │   ├── DetailPanel.tsx        # 详情面板
-│   ├── LatencyChart.tsx       # 延迟图表
+│   ├── LatencyChart.tsx       # 延迟图表（uPlot，主题令牌配色）
 │   ├── EventLog.tsx           # 消息动态
-│   ├── Toolbar.tsx            # 顶部工具栏
-│   ├── SettingsPanel.tsx      # 设置面板（含标签页）
-│   └── TargetEditor.tsx       # 目标编辑器
+│   ├── Toolbar.tsx            # 顶部工具栏（文件/统计/开始停止/面板切换）
+│   ├── SettingsPanel.tsx      # 设置弹窗（常规/外观/关于）
+│   └── TargetEditor.tsx       # 目标编辑器（回车保存）
+├── state/
+│   └── usePingoStore.ts       # 状态聚合 + 外观应用级存储（loadAppearance/saveAppearance）
 ├── utils/
 │   └── stats.ts               # 统计计算工具
-├── themes.ts                  # 主题配置定义
-├── App.tsx                    # 主应用组件（含主题应用逻辑）
-├── styles.css                 # 全局样式（含设计令牌和主题变量）
+├── themes.ts                  # 主题配置定义（6 套，完整令牌集）
+├── App.tsx                    # 主应用（主题应用、标题栏同步、开始页）
+├── styles.css                 # 全局样式（新拟态令牌 + 主题变量）
 └── types.ts                   # TypeScript 类型定义
 ```
-
----
-
-## 设计原则
-
-1. **玻璃态设计**：使用 `backdrop-filter: blur()` 实现毛玻璃效果
-2. **统一间距**：所有间距使用设计令牌，保持视觉一致性
-3. **状态反馈**：悬停、选中、禁用等状态有明确的视觉反馈
-4. **响应式布局**：支持面板拖拽调整和隐藏
-5. **性能优先**：避免不必要的重渲染和重复计算
-6. **可访问性**：按钮有 `title` 属性，图标按钮有文字说明
-7. **主题可切换**：支持多套皮肤，使用 CSS 变量实现动态切换
-8. **模态框优化**：使用标签页分组设置项，避免内容过长
