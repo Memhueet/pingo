@@ -23,12 +23,15 @@ import { TargetEditor } from "./components/TargetEditor";
 import { TargetGrid } from "./components/TargetGrid";
 import { Toolbar } from "./components/Toolbar";
 import { EventLog } from "./components/EventLog";
-import { applyPingSample, createTargetStatus, normalizeSettings } from "./state/usePingoStore";
+import { applyPingSample, createTargetStatus, loadAppearance, normalizeSettings, saveAppearance } from "./state/usePingoStore";
 import { calculateTargetStats } from "./utils/stats";
 import type { AppSettings, Target, TargetSaveData, TargetStatus } from "./types";
 import { defaultBackoffIntervals } from "./types";
 import { isValidIpv4 } from "./validation";
 import { getThemeById } from "./themes";
+
+// 同步读取应用级外观配置，开始页首帧即呈现上次的主题，避免闪白
+const savedAppearance = loadAppearance();
 
 const defaultSettings: AppSettings = {
   pingIntervalSeconds: 5,
@@ -36,9 +39,9 @@ const defaultSettings: AppSettings = {
   retentionDays: 7,
   alertThreshold: 3,
   // 空字符串 = 别名/IP 文字颜色跟随当前主题
-  aliasColor: "",
-  ipv4Color: "",
-  themeId: "pure-white",
+  aliasColor: savedAppearance.aliasColor ?? "",
+  ipv4Color: savedAppearance.ipv4Color ?? "",
+  themeId: savedAppearance.themeId ?? "pure-white",
   backoffIntervals: [...defaultBackoffIntervals],
 };
 
@@ -793,8 +796,9 @@ export default function App() {
           onClose={() => setShowSettings(false)}
           onSave={async (next) => {
             try {
+              saveAppearance(next);
               const saved = await saveSettings(next);
-              setSettings(saved);
+              setSettings(normalizeSettings(saved));
               setShowSettings(false);
             } catch (e) {
               setAppError((e as any)?.message ?? String(e));
