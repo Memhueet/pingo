@@ -92,7 +92,7 @@ export function SettingsPanel({ settings, sortMode, onClose, onSave, onSortModeC
 
   return (
     <div className="modalOverlay">
-      <div className="modalPanel">
+      <div className="modalPanel settingsModal">
         <div className="panelHeaderRow">
           <h3>设置</h3>
           <button type="button" className="closeBtn" onClick={onClose}>

@@ -1012,6 +1012,20 @@ button:focus-visible {
   max-width: 90vw;
 }
 
+/* 设置弹窗：固定高度，内容区内部滚动，切换 Tab 时整体尺寸不跳变 */
+.modalPanel.settingsModal {
+  height: 580px;
+  max-height: calc(100vh - 48px);
+  display: flex;
+  flex-direction: column;
+}
+
+.settingsModal .settingsContent {
+  flex: 1;
+  min-height: 0;
+  max-height: none;
+}
+
 .modalPanel h3 {
   margin: 0 0 var(--spacing-sm);
   font-size: var(--font-size-2xl);
