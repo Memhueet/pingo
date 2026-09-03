@@ -62,6 +62,9 @@ export function SettingsPanel({ settings, sortMode, onClose, onSave, onSortModeC
   const safeColor = (value: string, fallback: string) =>
     /^#[0-9a-fA-F]{6}$/.test(value) ? value : fallback;
 
+  // 无改动时保存按钮置灰，避免空写数据库
+  const dirty = JSON.stringify(draft) !== JSON.stringify(settings);
+
   function setNumber(field: keyof AppSettings, value: string) {
     const num = value === "" ? 0 : Number(value);
     setDraft({ ...draft, [field]: num });
@@ -349,6 +352,7 @@ export function SettingsPanel({ settings, sortMode, onClose, onSave, onSortModeC
           <button
             onClick={() => onSave(draft)}
             className="primaryBtn"
+            disabled={!dirty}
           >
             <Save size={14} style={{ marginRight: 6 }} />
             保存
