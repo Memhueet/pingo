@@ -14,6 +14,14 @@ export interface Theme {
   success: string;
   timeout: string;
   alert: string;
+  /** 图表：成功延迟柱色（每主题单独设计，可与状态色不同） */
+  chartSuccess: string;
+  /** 图表：超时柱色 */
+  chartTimeout: string;
+  /** 图表：坐标轴与刻度文字色 */
+  chartAxis: string;
+  /** 图表：网格线色 */
+  chartGrid: string;
   /** 新拟态：左上光源高光色 */
   shadowLight: string;
   /** 新拟态：右下暗影色 */
@@ -43,6 +51,10 @@ export const themes: Theme[] = [
     success: "#16a34a",
     timeout: "#dc2626",
     alert: "#d97706",
+    chartSuccess: "#3b82f6",
+    chartTimeout: "#ef4444",
+    chartAxis: "#64748b",
+    chartGrid: "#dde4ed",
     shadowLight: "#ffffff",
     shadowDark: "#a3b1c6",
   },
@@ -61,6 +73,10 @@ export const themes: Theme[] = [
     success: "#15803d",
     timeout: "#dc2626",
     alert: "#b45309",
+    chartSuccess: "#0f766e",
+    chartTimeout: "#dc2626",
+    chartAxis: "#8a6a3e",
+    chartGrid: "#ded1b2",
     shadowLight: "#fff8e8",
     shadowDark: "#c5b48c",
   },
@@ -79,6 +95,10 @@ export const themes: Theme[] = [
     success: "#15803d",
     timeout: "#dc2626",
     alert: "#b45309",
+    chartSuccess: "#0369a1",
+    chartTimeout: "#dc2626",
+    chartAxis: "#52678a",
+    chartGrid: "#bccadb",
     shadowLight: "#edf3fb",
     shadowDark: "#a6b7cc",
   },
@@ -97,6 +117,10 @@ export const themes: Theme[] = [
     success: "#15803d",
     timeout: "#dc2626",
     alert: "#b45309",
+    chartSuccess: "#4d7c0f",
+    chartTimeout: "#dc2626",
+    chartAxis: "#5d7642",
+    chartGrid: "#c2d5ae",
     shadowLight: "#eaf3dc",
     shadowDark: "#aabd90",
   },
@@ -115,6 +139,10 @@ export const themes: Theme[] = [
     success: "#4ade80",
     timeout: "#f87171",
     alert: "#fbbf24",
+    chartSuccess: "#38bdf8",
+    chartTimeout: "#f87171",
+    chartAxis: "#8b95a5",
+    chartGrid: "#262c37",
     shadowLight: "#262b35",
     shadowDark: "#121419",
   },
@@ -133,6 +161,10 @@ export const themes: Theme[] = [
     success: "#4ade80",
     timeout: "#f87171",
     alert: "#fbbf24",
+    chartSuccess: "#2dd4bf",
+    chartTimeout: "#fb7185",
+    chartAxis: "#a79ed1",
+    chartGrid: "#312a5b",
     shadowLight: "#322b5b",
     shadowDark: "#171335",
   },

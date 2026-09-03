@@ -56,8 +56,8 @@ export function LatencyChart({
     const data: uPlot.AlignedData = [timestamps, successValues, timeoutValues];
 
     if (!chartRef.current) {
-      const axisColor = theme.textSecondary;
-      const gridColor = theme.border;
+      const axisColor = theme.chartAxis;
+      const gridColor = theme.chartGrid;
       const chart = new uPlot(
         {
           width: chartSize.width,
@@ -76,8 +76,8 @@ export function LatencyChart({
             {},
             {
               label: "成功 (ms)",
-              stroke: theme.success,
-              fill: theme.success,
+              stroke: theme.chartSuccess,
+              fill: theme.chartSuccess,
               paths: uPlot.paths.bars!({
                 radius: 2,
               }),
@@ -85,8 +85,8 @@ export function LatencyChart({
             },
             {
               label: "超时 (ms)",
-              stroke: theme.timeout,
-              fill: theme.timeout,
+              stroke: theme.chartTimeout,
+              fill: theme.chartTimeout,
               paths: uPlot.paths.bars!({
                 radius: 2,
               }),
