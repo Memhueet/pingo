@@ -26,6 +26,7 @@ npm run tauri build                              # 生产构建（桌面安装�
 
 已知误报：`npm test` 中 uPlot 在 jsdom 下存在固有的 unhandled error，测试全部通过时不要把它当成回归去"修复"。
 
+
 ## 架构与边界
 
 前后端经由 Tauri 命令层通信，方向严格单向：**React 组件 → `src/api/tauri.ts`（命令封装）→ Rust `commands.rs` → 各 Rust 模块**。
@@ -66,7 +67,7 @@ npm run tauri build                              # 生产构建（桌面安装�
 
 ## 提交规范
 
-- 小粒度提交：一个独立需求或 bug 修复单独成一笔，完成一项提交一项，不相干改动不合并。
+- 小粒度提交：一个独立需求或 bug 修复单独成一笔，完成一项提交一项，不相干改动不合并。如果改动内容涉及README.md和AGENTS.md，请一起更新并一起提交。
 - 提交信息用中文，格式为 `<type>: <摘要>`，type 取 `feat` / `fix` / `style` / `refactor` / `docs` / `test` / `chore`；多要点时在正文逐行列出。
 - 示例：`feat: 顶栏新增全局统计（目标/启用/告警/平均延迟）`。
 
