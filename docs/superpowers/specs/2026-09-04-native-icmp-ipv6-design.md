@@ -77,12 +77,14 @@ Pingo 目前通过 spawn 系统 `ping` 命令采集延迟（`ping/command.rs` + 
   - TargetCard / DetailPanel 对长地址做 CSS 省略号 + `title` 提示，`addressColor` 令牌跟随现有外观机制；
 - 明确不做：域名解析、zone index、旧版系统（CentOS 7 等 iputils < 2015 需 ping6 的环境）。
 
-## 5. macOS `-W` 超时单位修复
+## 5. macOS/Windows 超时参数单位修复
 
 `command.rs` Unix 分支按平台拆开（`cfg(target_os = "macos")` / 其余 Unix）：
 
 - macOS：`-W` 传毫秒（`timeout_secs * 1000`）；
 - Linux 及其他 Unix：`-W` 维持秒。
+
+实测 Windows `-w` 亦为毫秒、现实现同样误传秒值，随本笔一并修复。
 
 ## 提交序列
 
