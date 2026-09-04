@@ -2,7 +2,7 @@
 
 /** 旧版内置的深色文字默认值；它们在暗色主题下不可读，加载时归一化为"跟随主题" */
 const LEGACY_ALIAS_COLOR = "#1f2933";
-const LEGACY_IPV4_COLOR = "#6b7280";
+const LEGACY_ADDRESS_COLOR = "#6b7280";
 
 /** 琥珀棕主题已替换为鲜草绿，旧 id 迁移到新主题 */
 const RENAMED_THEME_IDS: Record<string, string> = {
@@ -14,14 +14,23 @@ const APPEARANCE_STORAGE_KEY = "pingo.appearance";
 interface AppearanceSettings {
   themeId: string;
   aliasColor: string;
-  ipv4Color: string;
+  addressColor: string;
 }
 
-/** 外观配置属于应用本身而非数据文件；开始页在打开数据文件前也要能用上次的主题 */
+/**
+ * 外观配置属于应用本身而非数据文件；开始页在打开数据文件前也要能用上次的主题。
+ * 旧版外观对象里 IP 颜色字段名为 ipv4Color，读取时回退到新字段
+ */
 export function loadAppearance(): Partial<AppearanceSettings> {
   try {
     const raw = localStorage.getItem(APPEARANCE_STORAGE_KEY);
-    return raw ? (JSON.parse(raw) as Partial<AppearanceSettings>) : {};
+    if (!raw) return {};
+    const parsed = JSON.parse(raw) as Partial<AppearanceSettings> & { ipv4Color?: string };
+    if (parsed.addressColor === undefined && parsed.ipv4Color !== undefined) {
+      parsed.addressColor = parsed.ipv4Color;
+    }
+    delete parsed.ipv4Color;
+    return parsed;
   } catch {
     return {};
   }
@@ -33,7 +42,7 @@ export function saveAppearance(settings: AppSettings): void {
     const appearance: AppearanceSettings = {
       themeId: settings.themeId,
       aliasColor: settings.aliasColor,
-      ipv4Color: settings.ipv4Color,
+      addressColor: settings.addressColor,
     };
     localStorage.setItem(APPEARANCE_STORAGE_KEY, JSON.stringify(appearance));
   } catch {
@@ -47,14 +56,14 @@ export function normalizeSettings(settings: AppSettings): AppSettings {
   return {
     ...settings,
     aliasColor: settings.aliasColor === LEGACY_ALIAS_COLOR ? "" : settings.aliasColor,
-    ipv4Color: settings.ipv4Color === LEGACY_IPV4_COLOR ? "" : settings.ipv4Color,
+    addressColor: settings.addressColor === LEGACY_ADDRESS_COLOR ? "" : settings.addressColor,
     themeId: RENAMED_THEME_IDS[settings.themeId] ?? settings.themeId,
     // 数据文件里滞留的外观值让位于本机保存的应用级配置
     ...(appearance.themeId !== undefined
       ? { themeId: RENAMED_THEME_IDS[appearance.themeId] ?? appearance.themeId }
       : {}),
     ...(appearance.aliasColor !== undefined ? { aliasColor: appearance.aliasColor } : {}),
-    ...(appearance.ipv4Color !== undefined ? { ipv4Color: appearance.ipv4Color } : {}),
+    ...(appearance.addressColor !== undefined ? { addressColor: appearance.addressColor } : {}),
   };
 }
 

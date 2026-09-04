@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { isValidIpv4 } from "../validation";
+import { isValidAddress } from "../validation";
 import type { Target, TargetSaveData } from "../types";
 import { X, Save } from "lucide-react";
 
@@ -10,19 +10,22 @@ interface TargetEditorProps {
 }
 
 export function TargetEditor({ target, onClose, onSave }: TargetEditorProps) {
-  const [ipv4, setIpv4] = useState(target?.ipv4 ?? "");
+  const [addressInput, setAddressInput] = useState(target?.address ?? "");
   const [alias, setAlias] = useState(target?.alias ?? "");
   const [error, setError] = useState<string | null>(null);
 
   function handleSave() {
-    if (!isValidIpv4(ipv4)) {
-      setError("Only IPv4 addresses are supported in this version.");
+    // 粘贴的地址可能带首尾空白：校验与保存都用去除后的值，
+    // state 保持原样以免 trim 干扰输入过程
+    const address = addressInput.trim();
+    if (!isValidAddress(address)) {
+      setError("请输入有效的 IPv4 或 IPv6 地址");
       return;
     }
     if (target) {
-      onSave({ id: target.id, ipv4, alias: alias || ipv4 });
+      onSave({ id: target.id, address, alias: alias || address });
     } else {
-      onSave({ ipv4, alias: alias || ipv4 });
+      onSave({ address, alias: alias || address });
     }
   }
 
@@ -43,12 +46,12 @@ export function TargetEditor({ target, onClose, onSave }: TargetEditorProps) {
           }}
         >
           <label>
-            IPv4 地址
+            IP 地址
             <input
               type="text"
-              placeholder="192.168.1.1"
-              value={ipv4}
-              onChange={(event) => setIpv4(event.target.value)}
+              placeholder="192.168.1.1 或 2001:db8::1"
+              value={addressInput}
+              onChange={(event) => setAddressInput(event.target.value)}
             />
           </label>
           <label>

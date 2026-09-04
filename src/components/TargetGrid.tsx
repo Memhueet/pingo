@@ -17,7 +17,7 @@ interface TargetGridProps {
   onOpenSettings: () => void;
   hasActiveFile: boolean;
   aliasColor: string;
-  ipv4Color: string;
+  addressColor: string;
 }
 
 export function TargetGrid({
@@ -33,7 +33,7 @@ export function TargetGrid({
   onOpenSettings,
   hasActiveFile,
   aliasColor,
-  ipv4Color,
+  addressColor,
 }: TargetGridProps) {
   return (
     <div className="targetGrid">
@@ -51,7 +51,7 @@ export function TargetGrid({
             onSelect={(e) => onSelect(status.target.id, e)}
             onContextMenu={(e) => onContextMenu(e, status.target.id)}
             aliasColor={aliasColor}
-            ipv4Color={ipv4Color}
+            addressColor={addressColor}
           />
         ))
       )}

@@ -12,7 +12,7 @@ import { defaultBackoffIntervals } from "../types";
 function makeTarget(overrides?: Partial<Target>): Target {
   return {
     id: "target-1",
-    ipv4: "192.168.1.1",
+    address: "192.168.1.1",
     alias: "Router",
     enabled: true,
     createdAt: "2026-06-18T00:00:00Z",
@@ -28,7 +28,7 @@ function makeSettings(overrides?: Partial<AppSettings>): AppSettings {
     retentionDays: 7,
     alertThreshold: 3,
     aliasColor: "",
-    ipv4Color: "",
+    addressColor: "",
     themeId: "pure-white",
     backoffIntervals: [...defaultBackoffIntervals],
     ...overrides,
@@ -87,7 +87,7 @@ describe("appearance app-level storage", () => {
     expect(loadAppearance()).toEqual({
       themeId: "grass-green",
       aliasColor: "#112233",
-      ipv4Color: "",
+      addressColor: "",
     });
   });
 
@@ -97,10 +97,19 @@ describe("appearance app-level storage", () => {
     expect(loadAppearance()).toEqual({});
   });
 
+  it("loadAppearance 回退读取旧版 ipv4Color 字段", () => {
+    localStorage.setItem(
+      "pingo.appearance",
+      JSON.stringify({ themeId: "grass-green", aliasColor: "", ipv4Color: "#123456" }),
+    );
+    const appearance = loadAppearance();
+    expect(appearance.addressColor).toBe("#123456");
+  });
+
   it("normalizeSettings overlays app-level appearance over data-file values", () => {
     localStorage.setItem(
       "pingo.appearance",
-      JSON.stringify({ themeId: "grass-green", aliasColor: "", ipv4Color: "" }),
+      JSON.stringify({ themeId: "grass-green", aliasColor: "", addressColor: "" }),
     );
     const normalized = normalizeSettings(makeSettings({ themeId: "pure-white" }));
     expect(normalized.themeId).toBe("grass-green");
@@ -114,7 +123,7 @@ describe("appearance app-level storage", () => {
   it("normalizeSettings migrates renamed theme id from app-level appearance", () => {
     localStorage.setItem(
       "pingo.appearance",
-      JSON.stringify({ themeId: "amber-brown", aliasColor: "", ipv4Color: "" }),
+      JSON.stringify({ themeId: "amber-brown", aliasColor: "", addressColor: "" }),
     );
     const normalized = normalizeSettings(makeSettings());
     expect(normalized.themeId).toBe("grass-green");

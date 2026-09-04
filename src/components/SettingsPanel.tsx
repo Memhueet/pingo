@@ -293,21 +293,21 @@ export function SettingsPanel({ settings, sortMode, onClose, onSave, onSortModeC
                 <div className="colorPickerRow">
                   <input
                     type="color"
-                    value={safeColor(draft.ipv4Color, theme.text)}
-                    onChange={(event) => setDraft({ ...draft, ipv4Color: event.target.value })}
+                    value={safeColor(draft.addressColor, theme.text)}
+                    onChange={(event) => setDraft({ ...draft, addressColor: event.target.value })}
                   />
                   <input
                     type="text"
-                    value={draft.ipv4Color}
+                    value={draft.addressColor}
                     placeholder="跟随主题"
-                    onChange={(event) => setDraft({ ...draft, ipv4Color: event.target.value.trim() })}
+                    onChange={(event) => setDraft({ ...draft, addressColor: event.target.value.trim() })}
                     className="colorInput"
                   />
-                  {draft.ipv4Color !== "" && (
+                  {draft.addressColor !== "" && (
                     <button
                       type="button"
                       className="resetBtn"
-                      onClick={() => setDraft({ ...draft, ipv4Color: "" })}
+                      onClick={() => setDraft({ ...draft, addressColor: "" })}
                     >
                       跟随主题
                     </button>

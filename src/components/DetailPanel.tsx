@@ -20,7 +20,7 @@ export function DetailPanel({
       <div className="detailHeader">
         <div>
           <h2>{status.target.alias}</h2>
-          <p>{status.target.ipv4}</p>
+          <p>{status.target.address}</p>
         </div>
         <div className="statRow">
           <span>Average {avgLatency.toFixed(1)} ms</span>

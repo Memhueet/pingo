@@ -25,7 +25,7 @@ impl Storage {
             "
             CREATE TABLE IF NOT EXISTS targets (
                 id          TEXT PRIMARY KEY,
-                ipv4        TEXT NOT NULL,
+                address     TEXT NOT NULL,
                 alias       TEXT NOT NULL DEFAULT '',
                 enabled     INTEGER NOT NULL DEFAULT 1,
                 created_at  TEXT NOT NULL,
@@ -53,7 +53,35 @@ impl Storage {
                 ON ping_samples(sent_at);
             ",
         )?;
+        self.migrate_legacy_schema()?;
         Ok(())
+    }
+
+    /// 旧 schema 迁移（打开数据文件时自动执行，整体在单个事务内原子完成）：
+    /// 1. 旧版数据文件的 targets.ipv4 列改名为 address（SQLite ≥ 3.25 支持原子改名）；
+    /// 2. 设置键 ipv4_color 复制到 address_color 后删除旧键，
+    ///    否则用户把 IP 颜色显式重置为""并保存后，旧色会在下次打开时复活。
+    fn migrate_legacy_schema(&mut self) -> SqlResult<()> {
+        let tx = self.conn.transaction()?;
+        let has_legacy_column: bool = tx
+            .prepare("SELECT COUNT(*) FROM pragma_table_info('targets') WHERE name = 'ipv4'")?
+            .query_row([], |row| row.get::<_, i64>(0))
+            .map(|n| n > 0)?;
+        if has_legacy_column {
+            tx.execute_batch("ALTER TABLE targets RENAME COLUMN ipv4 TO address;")?;
+        }
+        let has_legacy_key: bool = tx
+            .prepare("SELECT COUNT(*) FROM settings WHERE key = 'ipv4_color'")?
+            .query_row([], |row| row.get::<_, i64>(0))
+            .map(|n| n > 0)?;
+        if has_legacy_key {
+            tx.execute_batch(
+                "INSERT OR IGNORE INTO settings (key, value)
+                   SELECT 'address_color', value FROM settings WHERE key = 'ipv4_color';
+                 DELETE FROM settings WHERE key = 'ipv4_color';",
+            )?;
+        }
+        tx.commit()
     }
 
     // ── Settings ──────────────────────────────────────────────
@@ -71,7 +99,14 @@ impl Storage {
             retention_days: get_str(&self.conn, "retention_days", "7").parse().unwrap_or(7),
             alert_threshold: get_str(&self.conn, "alert_threshold", "3").parse().unwrap_or(3),
             alias_color: get_str(&self.conn, "alias_color", "").to_string(),
-            ipv4_color: get_str(&self.conn, "ipv4_color", "").to_string(),
+            address_color: {
+                let new_value = get_str(&self.conn, "address_color", "");
+                if new_value.is_empty() {
+                    get_str(&self.conn, "ipv4_color", "")
+                } else {
+                    new_value
+                }
+            },
             theme_id: get_str(&self.conn, "theme_id", "pure-white").to_string(),
             backoff_intervals: parse_backoff_intervals(&get_str(
                 &self.conn,
@@ -97,7 +132,7 @@ impl Storage {
                 &settings.alert_threshold.to_string(),
             ),
             ("alias_color", &settings.alias_color),
-            ("ipv4_color", &settings.ipv4_color),
+            ("address_color", &settings.address_color),
             ("theme_id", &settings.theme_id),
             (
                 "backoff_intervals",
@@ -124,12 +159,12 @@ impl Storage {
     pub fn list_targets(&self) -> SqlResult<Vec<Target>> {
         let mut stmt = self
             .conn
-            .prepare("SELECT id, ipv4, alias, enabled, created_at, updated_at FROM targets ORDER BY created_at")?;
+            .prepare("SELECT id, address, alias, enabled, created_at, updated_at FROM targets ORDER BY created_at")?;
         let rows = stmt.query_map([], |row| {
             let id_str: String = row.get(0)?;
             Ok(Target {
                 id: Uuid::parse_str(&id_str).unwrap_or_default(),
-                ipv4: row.get(1)?,
+                address: row.get(1)?,
                 alias: row.get(2)?,
                 enabled: row.get::<_, i32>(3)? != 0,
                 created_at: row.get::<_, String>(4)?.parse().unwrap_or_else(|_| Utc::now()),
@@ -146,16 +181,16 @@ impl Storage {
     pub fn save_target(&self, target: &Target) -> SqlResult<()> {
         let now = Utc::now().to_rfc3339();
         self.conn.execute(
-            "INSERT INTO targets (id, ipv4, alias, enabled, created_at, updated_at)
+            "INSERT INTO targets (id, address, alias, enabled, created_at, updated_at)
              VALUES (?1, ?2, ?3, ?4, ?5, ?6)
              ON CONFLICT(id) DO UPDATE SET
-               ipv4      = excluded.ipv4,
+               address   = excluded.address,
                alias     = excluded.alias,
                enabled   = excluded.enabled,
                updated_at = excluded.updated_at",
             params![
                 target.id.to_string(),
-                target.ipv4,
+                target.address,
                 target.alias,
                 target.enabled as i32,
                 target.created_at.to_rfc3339(),
@@ -184,13 +219,13 @@ impl Storage {
     pub fn get_target(&self, id: Uuid) -> Result<Target, AppError> {
         let mut stmt = self
             .conn
-            .prepare("SELECT id, ipv4, alias, enabled, created_at, updated_at FROM targets WHERE id = ?1")
+            .prepare("SELECT id, address, alias, enabled, created_at, updated_at FROM targets WHERE id = ?1")
             .map_err(|e| AppError::Storage(e.to_string()))?;
         stmt.query_row(params![id.to_string()], |row| {
             let id_str: String = row.get(0)?;
             Ok(Target {
                 id: Uuid::parse_str(&id_str).unwrap_or_default(),
-                ipv4: row.get(1)?,
+                address: row.get(1)?,
                 alias: row.get(2)?,
                 enabled: row.get::<_, i32>(3)? != 0,
                 created_at: row.get::<_, String>(4)?.parse().unwrap_or_else(|_| Utc::now()),
@@ -347,7 +382,7 @@ mod tests {
         let storage = &h.storage;
         let target = Target {
             id: Uuid::new_v4(),
-            ipv4: "192.168.1.1".to_string(),
+            address: "192.168.1.1".to_string(),
             alias: "Router".to_string(),
             enabled: true,
             created_at: Utc::now(),
@@ -356,7 +391,7 @@ mod tests {
         storage.save_target(&target).unwrap();
         let targets = storage.list_targets().unwrap();
         assert_eq!(targets.len(), 1);
-        assert_eq!(targets[0].ipv4, "192.168.1.1");
+        assert_eq!(targets[0].address, "192.168.1.1");
     }
 
     #[test]
@@ -365,7 +400,7 @@ mod tests {
         let storage = &h.storage;
         let target = Target {
             id: Uuid::new_v4(),
-            ipv4: "10.0.0.1".to_string(),
+            address: "10.0.0.1".to_string(),
             alias: "Test".to_string(),
             enabled: true,
             created_at: Utc::now(),
@@ -382,7 +417,7 @@ mod tests {
         let storage = &h.storage;
         let target = Target {
             id: Uuid::new_v4(),
-            ipv4: "8.8.8.8".to_string(),
+            address: "8.8.8.8".to_string(),
             alias: "DNS".to_string(),
             enabled: true,
             created_at: Utc::now(),
@@ -428,12 +463,64 @@ mod tests {
     }
 
     #[test]
+    fn migrates_legacy_ipv4_column_and_settings_key() {
+        let dir = TempDir::new().unwrap();
+        let path = dir.path().join("legacy.db");
+        {
+            let conn = Connection::open(&path).unwrap();
+            conn.execute_batch(
+                "CREATE TABLE targets (
+                    id          TEXT PRIMARY KEY,
+                    ipv4        TEXT NOT NULL,
+                    alias       TEXT NOT NULL DEFAULT '',
+                    enabled     INTEGER NOT NULL DEFAULT 1,
+                    created_at  TEXT NOT NULL,
+                    updated_at  TEXT NOT NULL
+                );
+                CREATE TABLE settings (key TEXT PRIMARY KEY, value TEXT NOT NULL);
+                INSERT INTO targets (id, ipv4, alias, enabled, created_at, updated_at)
+                  VALUES ('11111111-1111-1111-1111-111111111111', '10.0.0.1', '', 1,
+                          '2026-01-01T00:00:00+00:00', '2026-01-01T00:00:00+00:00');
+                INSERT INTO settings (key, value) VALUES ('ipv4_color', '#123456');",
+            )
+            .unwrap();
+        }
+        let storage = Storage::open(&path).unwrap();
+        let targets = storage.list_targets().unwrap();
+        assert_eq!(targets.len(), 1);
+        assert_eq!(targets[0].address, "10.0.0.1");
+        let settings = storage.get_settings().unwrap();
+        // 旧键在打开时已复制到新键，不依赖 get_settings 的回退读取
+        assert_eq!(settings.address_color, "#123456");
+        let conn = Connection::open(&path).unwrap();
+        let legacy_count: i64 = conn
+            .query_row(
+                "SELECT COUNT(*) FROM settings WHERE key = 'ipv4_color'",
+                [],
+                |row| row.get(0),
+            )
+            .unwrap();
+        assert_eq!(legacy_count, 0);
+        // 保存后落新键，旧键不再增长
+        storage.save_settings(&settings).unwrap();
+        let conn = Connection::open(&path).unwrap();
+        let written: String = conn
+            .query_row(
+                "SELECT value FROM settings WHERE key = 'address_color'",
+                [],
+                |row| row.get(0),
+            )
+            .unwrap();
+        assert_eq!(written, "#123456");
+    }
+
+    #[test]
     fn cleanup_old_samples() {
         let h = TestHarness::new();
         let storage = &h.storage;
         let target = Target {
             id: Uuid::new_v4(),
-            ipv4: "1.1.1.1".to_string(),
+            address: "1.1.1.1".to_string(),
             alias: "Cloudflare".to_string(),
             enabled: true,
             created_at: Utc::now(),

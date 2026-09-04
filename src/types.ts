@@ -4,7 +4,7 @@ export interface AppSettings {
   retentionDays: number;
   alertThreshold: number;
   aliasColor: string;
-  ipv4Color: string;
+  addressColor: string;
   themeId: string;
   /** 连续失败 6 次后逐档采用的退避间隔（秒），最后一档封顶 */
   backoffIntervals: number[];
@@ -14,7 +14,7 @@ export const defaultBackoffIntervals = [10, 60, 180, 600, 1800, 3600];
 
 export interface Target {
   id: string;
-  ipv4: string;
+  address: string;
   alias: string;
   enabled: boolean;
   createdAt: string;
@@ -22,12 +22,12 @@ export interface Target {
 }
 
 export interface NewTarget {
-  ipv4: string;
+  address: string;
   alias: string;
 }
 export interface TargetSaveData {
   id?: string;
-  ipv4: string;
+  address: string;
   alias: string;
 }
 

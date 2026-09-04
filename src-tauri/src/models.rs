@@ -10,7 +10,7 @@ pub struct AppSettings {
     pub retention_days: i64,
     pub alert_threshold: u32,
     pub alias_color: String,
-    pub ipv4_color: String,
+    pub address_color: String,
     pub theme_id: String,
     /// 连续失败 6 次后逐档采用的退避间隔（秒），最后一档封顶
     #[serde(default = "default_backoff_intervals")]
@@ -44,7 +44,7 @@ impl Default for AppSettings {
             alert_threshold: 3,
             // 空字符串 = 别名/IP 文字颜色跟随当前主题
             alias_color: String::new(),
-            ipv4_color: String::new(),
+            address_color: String::new(),
             theme_id: "pure-white".to_string(),
             backoff_intervals: default_backoff_intervals(),
         }
@@ -55,7 +55,7 @@ impl Default for AppSettings {
 #[serde(rename_all = "camelCase")]
 pub struct Target {
     pub id: Uuid,
-    pub ipv4: String,
+    pub address: String,
     pub alias: String,
     pub enabled: bool,
     pub created_at: DateTime<Utc>,
@@ -65,7 +65,7 @@ pub struct Target {
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct NewTarget {
-    pub ipv4: String,
+    pub address: String,
     pub alias: String,
 }
 
@@ -103,8 +103,12 @@ pub struct HistoryFilePayload {
     pub targets: Vec<Target>,
 }
 
-pub fn is_valid_ipv4(value: &str) -> bool {
-    value.parse::<std::net::Ipv4Addr>().is_ok()
+/// 接受 IPv4/IPv6 字面量；zone index（如 fe80::1%eth0）显式拒绝
+pub fn is_valid_address(value: &str) -> bool {
+    if value.contains('%') {
+        return false;
+    }
+    value.parse::<std::net::IpAddr>().is_ok()
 }
 
 #[cfg(test)]
@@ -144,11 +148,18 @@ mod tests {
     }
 
     #[test]
-    fn target_requires_ipv4_shape() {
-        assert!(is_valid_ipv4("192.168.1.1"));
-        assert!(!is_valid_ipv4("example.com"));
-        assert!(!is_valid_ipv4("2001:db8::1"));
-        assert!(!is_valid_ipv4("300.1.1.1"));
+    fn target_accepts_ipv4_and_ipv6_literals() {
+        // IPv4
+        assert!(is_valid_address("192.168.1.1"));
+        assert!(!is_valid_address("300.1.1.1"));
+        // IPv6 压缩/完整/内嵌 IPv4
+        assert!(is_valid_address("2001:db8::1"));
+        assert!(is_valid_address("::1"));
+        assert!(is_valid_address("::ffff:192.168.1.1"));
+        // 拒绝：域名、双压缩、zone index
+        assert!(!is_valid_address("example.com"));
+        assert!(!is_valid_address("1::2::3"));
+        assert!(!is_valid_address("fe80::1%eth0"));
     }
 
     #[test]

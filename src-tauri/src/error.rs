@@ -3,8 +3,8 @@ use thiserror::Error;
 
 #[derive(Debug, Error)]
 pub enum AppError {
-    #[error("Only IPv4 addresses are supported in this version.")]
-    InvalidIpv4,
+    #[error("Invalid IP address.")]
+    InvalidAddress,
     #[error("The ping command failed: {0}")]
     PingCommand(String),
     #[error("The data file could not be opened.")]
@@ -29,7 +29,7 @@ pub struct CommandError {
 impl From<AppError> for CommandError {
     fn from(error: AppError) -> Self {
         let kind = match &error {
-            AppError::InvalidIpv4 => "invalidIpv4",
+            AppError::InvalidAddress => "invalidAddress",
             AppError::PingCommand(_) => "pingCommand",
             AppError::DataFileOpen => "dataFileOpen",
             AppError::StorageWrite => "storageWrite",

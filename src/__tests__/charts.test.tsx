@@ -9,7 +9,7 @@ describe("DetailPanel", () => {
     const status: TargetStatus = {
       target: {
         id: "target-1",
-        ipv4: "192.168.1.1",
+        address: "192.168.1.1",
         alias: "Router",
         enabled: true,
         createdAt: "2026-06-18T00:00:00Z",

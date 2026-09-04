@@ -58,7 +58,7 @@ Pingo 目前通过 spawn 系统 `ping` 命令采集延迟（`ping/command.rs` + 
 
 - Rust `Target.ipv4` → `address`、`NewTarget.ipv4` → `address`；TS `Target`/`NewTarget`/`TargetSaveData`/`AppSettings.ipv4Color` 同步改名（`addressColor`）。前后端约 19 个文件机械替换。
 - SQLite 列迁移：`Storage::init_schema` 建表后检查 `PRAGMA table_info(targets)`，存在 `ipv4` 列则 `ALTER TABLE targets RENAME COLUMN ipv4 TO address`（rusqlite bundled SQLite ≥ 3.25 支持）；新建库直接建 `address` 列。此为应用自身升级逻辑，随打开数据文件自动执行。
-- 设置键 `ipv4_color` → `address_color`：`get_settings` 先读新键、缺则回退旧键；`save_settings` 只写新键。
+- 设置键 `ipv4_color` → `address_color`：`get_settings` 先读新键、缺则回退旧键；`save_settings` 只写新键。打开数据文件时旧键值自动复制到新键并删除旧键。
 - localStorage 外观对象：字段 `ipv4Color` → `addressColor`；`loadAppearance` 对旧字段做回退读取，`normalizeSettings` 归一化后保存即落新字段。
 - `models.rs` 校验函数、`error.rs` 中 InvalidIpv4 类错误变体、`validation.ts`、`commands.rs` 入口校验、组件 props、store、测试一并更名。
 - README.md / AGENTS.md / Cargo.toml `description` 中"IPv4 延迟监控"等表述随本笔更新。
@@ -70,12 +70,12 @@ Pingo 目前通过 spawn 系统 `ping` 命令采集延迟（`ping/command.rs` + 
   - TS：`isValidAddress`，IPv4 沿用现逻辑，IPv6 手写校验（`::` 压缩至多一次、组 0–ffff、可内嵌 IPv4 尾段、拒绝 zone index 与非法冒号），边界用例配 Vitest 测试。
 - 采集：
   - Windows 原生路径天然支持（Icmp6SendEcho2，见第 1 节）；
-  - Unix 依赖现代系统 ping 对 IPv6 字面量的自动识别（iputils ≥ 2015、macOS Monterey+ 均已合并 ping6），不加 `-6` flag；
+  - Linux 依赖现代系统 ping 对 IPv6 字面量的自动识别（iputils ≥ 2015 已合并），不加 `-6` flag；macOS 26 实测 `ping` 不支持 IPv6 字面量且无 `-6` 选项，需 `ping6` 分派，本版暂未支持——macOS 上 IPv6 目标采集会以错误状态呈现，待后续单独处理；
   - `ping::probe` 入口统一按 `IpAddr` 分派，Unix 分支不变即天然兼容。
 - UI：
   - TargetEditor 标签改"IP 地址"，占位符含 IPv6 示例（如 `2001:db8::1`）；
   - TargetCard / DetailPanel 对长地址做 CSS 省略号 + `title` 提示，`addressColor` 令牌跟随现有外观机制；
-- 明确不做：域名解析、zone index、旧版系统（CentOS 7 等 iputils < 2015 需 ping6 的环境）。
+- 明确不做：域名解析、zone index、旧版系统（CentOS 7 等 iputils < 2015 需 ping6 的环境）、macOS 侧 IPv6 采集（需 ping6 分派 + 超时兜底）。
 
 ## 5. macOS/Windows 超时参数单位修复
 
@@ -90,7 +90,7 @@ Pingo 目前通过 spawn 系统 `ping` 命令采集延迟（`ping/command.rs` + 
 
 五笔独立提交，每笔完成即跑对应测试（前端改动 `npm test` + `npm run build`，Rust 改动 `cargo test`，跨端命令改动两套都跑）：
 
-1. `fix: 修正 macOS ping -W 超时单位为毫秒`
+1. `fix: ping 超时参数按平台传正确单位（Windows/macOS 毫秒、Linux 秒）`
 2. `perf: 采样改为并发执行`
 3. `refactor: ipv4 字段统一更名为 address（含数据迁移）`
 4. `feat: Windows 改用 IcmpSendEcho 原生 ICMP`

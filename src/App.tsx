@@ -28,7 +28,8 @@ import { applyPingSample, createTargetStatus, loadAppearance, normalizeSettings,
 import { calculateTargetStats } from "./utils/stats";
 import type { AppSettings, Target, TargetSaveData, TargetStatus } from "./types";
 import { defaultBackoffIntervals } from "./types";
-import { isValidIpv4 } from "./validation";
+import { isValidAddress } from "./validation";
+import { compareAddresses } from "./utils/address";
 import { getThemeById } from "./themes";
 
 // 同步读取应用级外观配置，开始页首帧即呈现上次的主题，避免闪白
@@ -41,7 +42,7 @@ const defaultSettings: AppSettings = {
   alertThreshold: 3,
   // 空字符串 = 别名/IP 文字颜色跟随当前主题
   aliasColor: savedAppearance.aliasColor ?? "",
-  ipv4Color: savedAppearance.ipv4Color ?? "",
+  addressColor: savedAppearance.addressColor ?? "",
   themeId: savedAppearance.themeId ?? "pure-white",
   backoffIntervals: [...defaultBackoffIntervals],
 };
@@ -158,7 +159,7 @@ export default function App() {
       if (cancelled) return;
       const currentTargets = targetsRef.current;
       const target = currentTargets.find((t) => t.target.id === event.sample.targetId);
-      const targetName = target?.target.alias || target?.target.ipv4 || event.sample.targetId;
+      const targetName = target?.target.alias || target?.target.address || event.sample.targetId;
 
       if (event.notify) {
         if (event.sample.status === "timeout") {
@@ -226,7 +227,7 @@ export default function App() {
 
   const theme = useMemo(() => getThemeById(settings.themeId), [settings.themeId]);
   const effectiveAliasColor = settings.aliasColor || theme.textSecondary;
-  const effectiveIpv4Color = settings.ipv4Color || theme.text;
+  const effectiveAddressColor = settings.addressColor || theme.text;
 
   useEffect(() => {
     const root = document.documentElement;
@@ -280,8 +281,7 @@ export default function App() {
         return a.target.enabled ? -1 : 1;
       }
       if (sortMode === "ip") {
-        const ipToNum = (ip: string) => ip.split(".").reduce((acc, octet) => (acc << 8) + parseInt(octet), 0);
-        return direction * (ipToNum(a.target.ipv4) - ipToNum(b.target.ipv4));
+        return direction * compareAddresses(a.target.address, b.target.address);
       }
       if (sortMode === "createdAt") {
         return direction * (new Date(a.target.createdAt).getTime() - new Date(b.target.createdAt).getTime());
@@ -299,7 +299,7 @@ export default function App() {
   }, [targets, sortMode, sortDirection]);
 
   interface ImportedTarget {
-    ipv4: string;
+    address: string;
     alias: string;
   }
 
@@ -312,8 +312,8 @@ export default function App() {
       const parts = line.split(",");
       const ip = parts[0].trim();
       const alias = parts.length > 1 ? parts.slice(1).join(",").trim() : "";
-      if (isValidIpv4(ip)) {
-        validTargets.push({ ipv4: ip, alias });
+      if (isValidAddress(ip)) {
+        validTargets.push({ address: ip, alias });
       } else {
         invalidIPs.push(line);
       }
@@ -324,17 +324,17 @@ export default function App() {
       return;
     }
 
-    const existingIPs = new Set(targets.map((t) => t.target.ipv4));
+    const existingIPs = new Set(targets.map((t) => t.target.address));
     let addedCount = 0;
     let skippedCount = 0;
 
     for (const target of validTargets) {
-      if (existingIPs.has(target.ipv4)) {
+      if (existingIPs.has(target.address)) {
         skippedCount++;
         continue;
       }
       try {
-        const t = await saveTarget({ ipv4: target.ipv4, alias: target.alias });
+        const t = await saveTarget({ address: target.address, alias: target.alias });
         setTargets((current) => [...current, createTargetStatus(t)]);
         addedCount++;
       } catch (e) {
@@ -498,7 +498,7 @@ export default function App() {
             }),
           );
         } catch (e) {
-          console.error(`Failed to load samples for ${target.ipv4}:`, e);
+          console.error(`Failed to load samples for ${target.address}:`, e);
         }
       }
     } catch (e) {
@@ -616,7 +616,7 @@ export default function App() {
               onOpenSettings={() => setShowSettings(true)}
               hasActiveFile={hasActiveFile}
               aliasColor={effectiveAliasColor}
-              ipv4Color={effectiveIpv4Color}
+              addressColor={effectiveAddressColor}
             />
           </aside>
         )}
@@ -773,7 +773,7 @@ export default function App() {
           onSave={async (payload: TargetSaveData) => {
             try {
               if (payload.id) {
-                const updated = await updateTarget(payload.id, payload.ipv4, payload.alias);
+                const updated = await updateTarget(payload.id, payload.address, payload.alias);
                 setTargets((current) =>
                   current.map((s) =>
                     s.target.id === updated.id

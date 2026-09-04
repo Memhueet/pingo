@@ -97,6 +97,7 @@ pub async fn save_settings(
         let mut backoff = state.scheduler.backoff_intervals.lock().await;
         *backoff = settings.backoff_intervals.clone();
     }
+    state.scheduler.request_reschedule();
 
     Ok(settings)
 }
@@ -106,14 +107,14 @@ pub async fn save_target(
     state: State<'_, AppState>,
     new_target: NewTarget,
 ) -> CommandResult<Target> {
-    // Validate IPv4
-    if !crate::models::is_valid_ipv4(&new_target.ipv4) {
-        return Err(AppError::InvalidIpv4.into());
+    // Validate address
+    if !crate::models::is_valid_address(&new_target.address) {
+        return Err(AppError::InvalidAddress.into());
     }
 
-     let ipv4 = new_target.ipv4.clone();
+     let address = new_target.address.clone();
      let alias = if new_target.alias.is_empty() {
-         ipv4.clone()
+         address.clone()
      } else {
          new_target.alias
      };
@@ -121,7 +122,7 @@ pub async fn save_target(
      let now = Utc::now();
      let target = Target {
          id: Uuid::new_v4(),
-         ipv4,
+         address,
          alias,
          enabled: true,
         created_at: now,
@@ -130,6 +131,7 @@ pub async fn save_target(
     storage
         .save_target(&target)
         .map_err(|e| AppError::Storage(e.to_string()))?;
+    state.scheduler.request_reschedule();
     Ok(target)
 }
 
@@ -137,7 +139,7 @@ pub async fn save_target(
 #[serde(rename_all = "camelCase")]
 pub struct UpdateTargetPayload {
     pub id: Uuid,
-    pub ipv4: String,
+    pub address: String,
     pub alias: String,
 }
 
@@ -146,11 +148,11 @@ pub async fn update_target(
     state: State<'_, AppState>,
     payload: UpdateTargetPayload,
 ) -> CommandResult<Target> {
-    if !crate::models::is_valid_ipv4(&payload.ipv4) {
-        return Err(AppError::InvalidIpv4.into());
+    if !crate::models::is_valid_address(&payload.address) {
+        return Err(AppError::InvalidAddress.into());
     }
     let alias = if payload.alias.is_empty() {
-        payload.ipv4.clone()
+        payload.address.clone()
     } else {
         payload.alias
     };
@@ -161,7 +163,7 @@ pub async fn update_target(
     let now = Utc::now();
     let target = Target {
         id: payload.id,
-        ipv4: payload.ipv4,
+        address: payload.address,
         alias,
         enabled: existing.enabled,
         created_at: existing.created_at,
@@ -170,6 +172,7 @@ pub async fn update_target(
     storage
         .save_target(&target)
         .map_err(|e| AppError::Storage(e.to_string()))?;
+    state.scheduler.request_reschedule();
     Ok(target)
 }
 
@@ -183,6 +186,7 @@ pub async fn delete_target(
     storage
         .delete_target(payload.id)
         .map_err(|e| AppError::Storage(e.to_string()))?;
+    state.scheduler.request_reschedule();
     Ok(())
 }
 
@@ -192,9 +196,10 @@ pub async fn set_target_enabled(
     payload: SetTargetEnabledPayload,
 ) -> CommandResult<Target> {
     let storage = state.storage.lock().await;
-    storage
-        .update_target_enabled(payload.id, payload.enabled)
-        .map_err(|e| e.into())
+    let target = storage
+        .update_target_enabled(payload.id, payload.enabled)?;
+    state.scheduler.request_reschedule();
+    Ok(target)
 }
 
 #[tauri::command]
@@ -237,12 +242,14 @@ pub async fn history_samples(query: HistorySamplesQuery) -> CommandResult<Vec<Pi
          let sched_state = state.scheduler.clone();
          crate::scheduler::start(app_handle, sched_state);
      }
+     state.scheduler.request_reschedule();
      Ok(())
  }
 
 #[tauri::command]
 pub async fn stop_ping(state: State<'_, AppState>) -> CommandResult<()> {
     state.scheduler.ping_running.store(false, Ordering::Release);
+    state.scheduler.request_reschedule();
     Ok(())
 }
 
@@ -293,6 +300,8 @@ pub async fn switch_data_file(
     *backoff = settings.backoff_intervals.clone();
     drop(backoff);
 
+    state.scheduler.request_reschedule();
+
     Ok(BootstrapPayload {
         settings,
         targets,
@@ -339,6 +348,8 @@ pub async fn new_data_file(
     let mut data_path_guard = state.scheduler.data_path.lock().await;
     *data_path_guard = path.clone();
     drop(data_path_guard);
+
+    state.scheduler.request_reschedule();
 
     Ok(BootstrapPayload {
         settings,

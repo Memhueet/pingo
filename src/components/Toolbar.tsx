@@ -71,7 +71,7 @@ export function Toolbar({
         )}
         <div className="titleSection">
           <h1>Pingo</h1>
-          <p>IPv4 延迟监控 {currentFileName && `— ${currentFileName}`}</p>
+          <p>IP 延迟监控 {currentFileName && `— ${currentFileName}`}</p>
         </div>
       </div>
       {hasActiveFile && (

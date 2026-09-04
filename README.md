@@ -1,13 +1,14 @@
 # Pingo
 
-Pingo 是一个基于 **Tauri + Rust** 构建的轻量级桌面监控工具，用于检测 IPv4 地址的可达性与延迟，并以柱状图实时呈现网络质量。
+Pingo 是一个基于 **Tauri + Rust** 构建的轻量级桌面监控工具，用于检测 IP 地址的可达性与延迟，并以柱状图实时呈现网络质量。
 
 > 说明：本项目 99.9% 的代码由 AI Agent 生成，过程中使用的 Agent 包括 Codex、CodeBuddy、Qoder、Trae 和 Zcode。
 
 ## 功能特性
 
 ### 核心功能
-- IPv4 地址可达性检测
+- IP 地址可达性检测
+- IPv6 地址可达性检测
 - 实时延迟监控（柱状图展示）
 - 目标管理（添加、编辑、启用/禁用、删除）
 - 连续超时告警
@@ -28,7 +29,7 @@ Pingo 是一个基于 **Tauri + Rust** 构建的轻量级桌面监控工具，�
 - **六套内置主题**：纯净白、晨曦黄、灰调蓝、鲜草绿、深邃黑、极光紫（覆盖亮色 / 中性 / 暗色）
 - **新拟态质感**（Neumorphism / Soft UI）：全局单色表面，立体感由左上高光 + 右下暗影双向阴影塑造
 - **一键切换**：基于 CSS 变量动态切换，无需刷新；图表柱色、坐标轴、网格逐主题单独设计
-- **自定义颜色**：可分别设置别名与 IPv4 文本颜色
+- **自定义颜色**：可分别设置别名与 IP 文本颜色
 - **外观跟随应用**：主题等外观配置保存在应用本身（而非数据文件），启动时开始页即呈现上次主题；窗口标题栏深浅色同步跟随主题（Windows 原生装饰）
 
 ### 设置
@@ -70,13 +71,14 @@ Pingo/
 │   ├── main.tsx                # 入口文件
 │   ├── themes.ts               # 主题定义
 │   ├── types.ts                # TypeScript 类型定义
-│   ├── validation.ts           # IPv4 校验
+│   ├── validation.ts           # IP 地址校验
 │   └── styles.css              # 全局样式（设计令牌 + 主题变量）
 ├── src-tauri/                  # 后端代码（Rust）
 │   ├── src/
 │   │   ├── ping/               # Ping 执行与输出解析
-│   │   │   ├── command.rs      # 调用系统 ping 命令
-│   │   │   ├── parser.rs       # 解析 ping 输出
+│   │   │   ├── icmp.rs         # Windows 原生 ICMP 探测
+│   │   │   ├── command.rs      # 调用系统 ping 命令（Unix；IPv6 走 ping6）
+│   │   │   ├── parser.rs       # 解析 ping 输出（Unix）
 │   │   │   └── mod.rs
 │   │   ├── fixtures/           # ping 输出测试样本
 │   │   ├── commands.rs         # Tauri 命令定义

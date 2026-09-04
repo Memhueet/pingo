@@ -4,7 +4,7 @@
 
 ## 项目概述
 
-Pingo 是基于 **Tauri 2 + React 19 + TypeScript + Rust** 的轻量级桌面 IPv4 延迟监控工具：调度系统 `ping` 命令采集延迟，柱状图实时展示，数据落盘 SQLite。项目文档、注释与提交信息统一使用中文。
+Pingo 是基于 **Tauri 2 + React 19 + TypeScript + Rust** 的轻量级桌面 IP（IPv4/IPv6）延迟监控工具：调度系统 `ping` 命令采集延迟，柱状图实时展示，数据落盘 SQLite。项目文档、注释与提交信息统一使用中文。
 
 ## 常用命令
 
@@ -37,7 +37,7 @@ npm run tauri build                              # 生产构建（桌面安装�
 - `state/usePingoStore.ts` — 全局状态与采样聚合逻辑，是前端的核心业务层；同时承载外观配置的应用级存储（`loadAppearance` / `saveAppearance` / `normalizeSettings`）。
 - `components/` — UI 组件。`GlassCard`/`GlassButton` 是通用视觉容器（新拟态，历史名称保留），其余组件对应一个界面区域（Toolbar / TargetGrid / TargetCard / DetailPanel / LatencyChart / EventLog / TargetEditor / SettingsPanel）。
 - `themes.ts` + `styles.css` — 主题定义与新拟态设计令牌。颜色、阴影、圆角、间距一律使用 CSS 变量，禁止在组件里写死色值；主题令牌共 20 个（表面/文字/状态/图表 `chart*`/新拟态 `shadowLight`+`shadowDark`），新增主题必须补全，并保证亮暗语境下文字可读。
-- `types.ts` — 共享类型；`validation.ts` — IPv4 校验；`utils/stats.ts` — 延迟统计。
+- `types.ts` — 共享类型；`validation.ts` — IP 地址校验；`utils/stats.ts` — 延迟统计。
 - `__tests__/` — Vitest 测试，配套 `setup.ts`。
 
 ### 设置存储边界（重要）
@@ -45,14 +45,14 @@ npm run tauri build                              # 生产构建（桌面安装�
 设置分两层，勿混淆：
 
 - **功能设置**（间隔/超时/保留天数/告警阈值/退避阶梯/排序）随数据文件存 SQLite `settings` 表。
-- **外观配置**（`themeId`、`aliasColor`、`ipv4Color`）是**应用级配置**，存 WebView localStorage；数据文件里虽有一份旧值，但加载时一律被 `normalizeSettings` 用应用级值覆盖。保存设置时必须调用 `saveAppearance` 同步。开始页在打开数据文件前依赖该存储呈现上次主题，勿把外观改回仅随数据文件。
+- **外观配置**（`themeId`、`aliasColor`、`addressColor`）是**应用级配置**，存 WebView localStorage；数据文件里虽有一份旧值，但加载时一律被 `normalizeSettings` 用应用级值覆盖。保存设置时必须调用 `saveAppearance` 同步。开始页在打开数据文件前依赖该存储呈现上次主题，勿把外观改回仅随数据文件。
 - 主题切换的 effect 除写 `--theme-*` 变量外，还调用 `getCurrentWindow().setTheme()` 同步系统标题栏深浅色；`LatencyChart` 接收 `theme` prop 并以 `theme.id` 为 key 重挂载。
 
 后端 `src-tauri/src/`：
 
 - `commands.rs` — 所有 `#[tauri::command]` 的定义处，新命令必须在此注册并同步更新 `lib.rs` 的 `invoke_handler` 与 `capabilities/` 权限；改 `capabilities/default.json` 后 `gen/schemas/` 会再生成，属提交产物需一并入库。
-- `scheduler.rs` — ping 调度器（并发采集的核心）。
-- `ping/` — `command.rs` 调系统 ping、`parser.rs` 解析输出；解析逻辑的测试样本放 `fixtures/`（Windows 中文输出依赖 `encoding_rs` 解码，改解析器时注意覆盖）。
+- `scheduler.rs` — ping 调度器：每目标独立节奏（到期即派发、完成即处理，互不拖累），sent_at 为实际派发时刻；设置/目标/启停/数据文件变更经 `request_reschedule` 立即生效；历史保留清理为独立低频任务。
+- `ping/` — command.rs 调系统 ping（Unix；macOS IPv6 字面量走 ping6，等待上限由应用层超时兜底）、icmp.rs 走 Windows IcmpSendEcho/Icmp6SendEcho2 原生 ICMP，mod.rs 按平台分派；Unix 解析逻辑的测试样本放 `fixtures/`。
 - `storage.rs` — SQLite（rusqlite bundled）；`config.rs` — 配置；`models.rs` — 数据模型；`error.rs` — 错误定义。
 
 新增跨端数据结构时，`src/types.ts` 与 `src-tauri/src/models.rs` 必须成对修改，字段名保持 camelCase↔snake_case 映射一致（Rust 侧用 serde rename）。

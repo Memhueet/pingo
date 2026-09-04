@@ -22,8 +22,8 @@ export function saveTarget(newTarget: NewTarget) {
   return invoke<Target>("save_target", { newTarget });
 }
 
-export function updateTarget(id: string, ipv4: string, alias: string) {
-  return invoke<Target>("update_target", { payload: { id, ipv4, alias } });
+export function updateTarget(id: string, address: string, alias: string) {
+  return invoke<Target>("update_target", { payload: { id, address, alias } });
 }
 
 export function deleteTarget(id: string) {

@@ -10,7 +10,7 @@ export function TargetCard({
   onSelect,
   onContextMenu,
   aliasColor,
-  ipv4Color,
+  addressColor,
 }: {
   status: TargetStatus;
   isSelected: boolean;
@@ -18,7 +18,7 @@ export function TargetCard({
   onSelect: (e: React.MouseEvent) => void;
   onContextMenu: (e: React.MouseEvent) => void;
   aliasColor: string;
-  ipv4Color: string;
+  addressColor: string;
 }) {
   const { avgLatency, totalCount, timeoutCount, timeoutRate, successes } =
     calculateTargetStats(status.samples);
@@ -34,9 +34,9 @@ export function TargetCard({
       multiSelected={isMultiSelected}
     >
       <div className="tcHead">
-        <span className="tcIp" style={{ color: ipv4Color }}>
+        <span className="tcIp" style={{ color: addressColor }} title={status.target.address}>
           <span className="tcDot" />
-          {status.target.ipv4}
+          <span className="tcIpText">{status.target.address}</span>
         </span>
         {state === "alert" && (
           <span className="tcStatus">
@@ -47,7 +47,7 @@ export function TargetCard({
       </div>
       <div className="tcSub">
         <span className="tcAlias" style={{ color: aliasColor }}>
-          {status.target.alias || status.target.ipv4}
+          {status.target.alias || status.target.address}
         </span>
         {state === "off" ? (
           <span className="tcLatency">未探测</span>
