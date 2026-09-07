@@ -6,6 +6,8 @@ export interface AppSettings {
   aliasColor: string;
   addressColor: string;
   themeId: string;
+  /** 图表视图偏好：忽略单次超时，仅连续 ≥2 次的超时计入图表与统计（应用级配置） */
+  ignoreSingleTimeout: boolean;
   /** 连续失败 6 次后逐档采用的退避间隔（秒），最后一档封顶 */
   backoffIntervals: number[];
 }

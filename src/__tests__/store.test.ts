@@ -30,6 +30,7 @@ function makeSettings(overrides?: Partial<AppSettings>): AppSettings {
     aliasColor: "",
     addressColor: "",
     themeId: "pure-white",
+    ignoreSingleTimeout: false,
     backoffIntervals: [...defaultBackoffIntervals],
     ...overrides,
   };
@@ -88,7 +89,18 @@ describe("appearance app-level storage", () => {
       themeId: "grass-green",
       aliasColor: "#112233",
       addressColor: "",
+      ignoreSingleTimeout: false,
     });
+  });
+
+  it("ignoreSingleTimeout 持久化并在 normalizeSettings 时覆盖", () => {
+    saveAppearance(makeSettings({ ignoreSingleTimeout: true }));
+    expect(loadAppearance().ignoreSingleTimeout).toBe(true);
+    expect(normalizeSettings(makeSettings()).ignoreSingleTimeout).toBe(true);
+  });
+
+  it("ignoreSingleTimeout 在应用级配置缺省时默认关闭", () => {
+    expect(normalizeSettings(makeSettings()).ignoreSingleTimeout).toBe(false);
   });
 
   it("loadAppearance returns empty object when storage is empty or corrupt", () => {

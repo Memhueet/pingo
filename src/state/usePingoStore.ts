@@ -15,6 +15,7 @@ interface AppearanceSettings {
   themeId: string;
   aliasColor: string;
   addressColor: string;
+  ignoreSingleTimeout: boolean;
 }
 
 /**
@@ -43,6 +44,7 @@ export function saveAppearance(settings: AppSettings): void {
       themeId: settings.themeId,
       aliasColor: settings.aliasColor,
       addressColor: settings.addressColor,
+      ignoreSingleTimeout: settings.ignoreSingleTimeout,
     };
     localStorage.setItem(APPEARANCE_STORAGE_KEY, JSON.stringify(appearance));
   } catch {
@@ -64,6 +66,8 @@ export function normalizeSettings(settings: AppSettings): AppSettings {
       : {}),
     ...(appearance.aliasColor !== undefined ? { aliasColor: appearance.aliasColor } : {}),
     ...(appearance.addressColor !== undefined ? { addressColor: appearance.addressColor } : {}),
+    // 本字段无数据文件旧值，应用级配置缺省即关闭
+    ignoreSingleTimeout: appearance.ignoreSingleTimeout ?? false,
   };
 }
 

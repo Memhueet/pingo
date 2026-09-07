@@ -2,18 +2,25 @@ import type { TargetStatus } from "../types";
 import type { Theme } from "../themes";
 import { LatencyChart } from "./LatencyChart";
 import { GlassCard } from "./GlassCard";
-import { calculateTargetStats } from "../utils/stats";
+import { calculateTargetStats, filterIsolatedTimeouts } from "../utils/stats";
 
 export function DetailPanel({
   status,
   pingTimeoutSecs,
   theme,
+  ignoreSingleTimeout,
+  onToggleIgnoreSingleTimeout,
 }: {
   status: TargetStatus;
   pingTimeoutSecs: number;
   theme: Theme;
+  ignoreSingleTimeout: boolean;
+  onToggleIgnoreSingleTimeout: (value: boolean) => void;
 }) {
-  const { avgLatency, maxLatency, timeoutCount } = calculateTargetStats(status.samples);
+  const visibleSamples = ignoreSingleTimeout
+    ? filterIsolatedTimeouts(status.samples)
+    : status.samples;
+  const { avgLatency, maxLatency, timeoutCount } = calculateTargetStats(visibleSamples);
 
   return (
     <GlassCard className="detailShell" cornerRadius={16}>
@@ -28,11 +35,22 @@ export function DetailPanel({
           <span>Timeouts {timeoutCount}</span>
         </div>
       </div>
+      <div className="chartToolbar">
+        <button
+          type="button"
+          className={`chartSwitch${ignoreSingleTimeout ? " on" : ""}`}
+          aria-pressed={ignoreSingleTimeout}
+          title="开启后，孤立的超时样本不显示也不计入统计，仅连续两次及以上的超时保留"
+          onClick={() => onToggleIgnoreSingleTimeout(!ignoreSingleTimeout)}
+        >
+          忽略单次超时
+        </button>
+      </div>
       <div className="chartContainer">
         {/* key 随主题变化强制重建 uPlot 实例，让系列色/坐标轴即时跟随主题 */}
         <LatencyChart
           key={theme.id}
-          samples={status.samples}
+          samples={visibleSamples}
           pingTimeoutMs={pingTimeoutSecs * 1000}
           theme={theme}
         />
