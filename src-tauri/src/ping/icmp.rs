@@ -58,8 +58,8 @@ fn send_echo_v4(handle: HANDLE, addr: Ipv4Addr, timeout_secs: u64) -> CommandRes
     let mut reply_buf = vec![0u8; reply_size as usize];
     let timeout_ms = timeout_millis(timeout_secs);
 
-    // DestinationAddress 是网络字节序的 u32
-    let dest = u32::from_be_bytes(addr.octets());
+    // inet_addr 风格的网络字节序目标地址（详见 ping::ipv4_dest_u32 的说明）
+    let dest = super::ipv4_dest_u32(addr);
 
     let replies = unsafe {
         IcmpSendEcho(
