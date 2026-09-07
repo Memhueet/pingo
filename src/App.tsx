@@ -636,12 +636,6 @@ export default function App() {
               pingTimeoutSecs={settings.pingTimeoutSeconds}
               theme={theme}
               ignoreSingleTimeout={settings.ignoreSingleTimeout}
-              onToggleIgnoreSingleTimeout={(value) => {
-                const next = { ...settings, ignoreSingleTimeout: value };
-                // 本机查看偏好，只入应用级外观存储，不写数据文件
-                saveAppearance(next);
-                setSettings(next);
-              }}
             />
           ) : (
             <div className="emptyDetail">选择目标查看详情</div>

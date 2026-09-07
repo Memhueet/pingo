@@ -9,13 +9,11 @@ export function DetailPanel({
   pingTimeoutSecs,
   theme,
   ignoreSingleTimeout,
-  onToggleIgnoreSingleTimeout,
 }: {
   status: TargetStatus;
   pingTimeoutSecs: number;
   theme: Theme;
   ignoreSingleTimeout: boolean;
-  onToggleIgnoreSingleTimeout: (value: boolean) => void;
 }) {
   const visibleSamples = ignoreSingleTimeout
     ? filterIsolatedTimeouts(status.samples)
@@ -34,17 +32,6 @@ export function DetailPanel({
           <span>Max {maxLatency.toFixed(1)} ms</span>
           <span>Timeouts {timeoutCount}</span>
         </div>
-      </div>
-      <div className="chartToolbar">
-        <button
-          type="button"
-          className={`chartSwitch${ignoreSingleTimeout ? " on" : ""}`}
-          aria-pressed={ignoreSingleTimeout}
-          title="开启后，孤立的超时样本不显示也不计入统计，仅连续两次及以上的超时保留"
-          onClick={() => onToggleIgnoreSingleTimeout(!ignoreSingleTimeout)}
-        >
-          忽略单次超时
-        </button>
       </div>
       <div className="chartContainer">
         {/* key 随主题变化强制重建 uPlot 实例，让系列色/坐标轴即时跟随主题 */}

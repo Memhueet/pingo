@@ -861,36 +861,6 @@ button:focus-visible {
   box-shadow: var(--shadow-inset-sm);
 }
 
-/* 图表顶部工具行：忽略单次超时开关 */
-.chartToolbar {
-  display: flex;
-  justify-content: flex-end;
-  padding: 0 4px var(--spacing-sm);
-}
-
-/* 凸起 = 关闭；凹陷 + 强调色 = 开启，状态由双向阴影塑造 */
-.chartSwitch {
-  border: none;
-  cursor: pointer;
-  font: inherit;
-  font-size: var(--font-size-sm);
-  line-height: 1;
-  color: var(--theme-textSecondary);
-  background: var(--theme-cardBackground);
-  padding: 6px 12px;
-  border-radius: var(--radius-md);
-  box-shadow: 2px 2px 5px var(--theme-shadowDark), -2px -2px 5px var(--theme-shadowLight);
-}
-
-.chartSwitch:hover {
-  color: var(--theme-text);
-}
-
-.chartSwitch.on {
-  color: var(--theme-accent);
-  box-shadow: var(--shadow-inset-sm);
-}
-
 .chartContainer {
   flex: 1;
   min-height: 0;
@@ -1207,6 +1177,24 @@ button:focus-visible {
   font-size: var(--font-size-xs);
   color: var(--theme-textSecondary);
   line-height: 1.6;
+}
+
+/* 复选框行：主题强调色跟随当前主题 */
+.checkboxRow {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  cursor: pointer;
+  font-size: var(--font-size-md);
+  color: var(--theme-text);
+}
+
+.checkboxRow input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  accent-color: var(--theme-accent);
+  cursor: pointer;
 }
 
 .backoffGrid {

@@ -44,14 +44,12 @@ describe("DetailPanel", () => {
         pingTimeoutSecs={5}
         theme={getThemeById("pure-white")}
         ignoreSingleTimeout={false}
-        onToggleIgnoreSingleTimeout={() => {}}
       />,
     );
 
     expect(screen.getByText("Router")).toBeTruthy();
     expect(screen.getByText("Average 10.0 ms")).toBeTruthy();
     expect(screen.getByText("Timeouts 1")).toBeTruthy();
-    expect(screen.getByText("忽略单次超时")).toBeTruthy();
   });
 
   it("hides isolated timeout stats when ignoreSingleTimeout is on", () => {
@@ -93,7 +91,6 @@ describe("DetailPanel", () => {
         pingTimeoutSecs={5}
         theme={getThemeById("pure-white")}
         ignoreSingleTimeout={true}
-        onToggleIgnoreSingleTimeout={() => {}}
       />,
     );
 

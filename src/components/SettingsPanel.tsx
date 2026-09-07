@@ -314,6 +314,21 @@ export function SettingsPanel({ settings, sortMode, onClose, onSave, onSortModeC
                   )}
                 </div>
               </label>
+              <div className="settingsField">
+                <label className="checkboxRow">
+                  <input
+                    type="checkbox"
+                    checked={draft.ignoreSingleTimeout}
+                    onChange={(event) =>
+                      setDraft({ ...draft, ignoreSingleTimeout: event.target.checked })
+                    }
+                  />
+                  <span>忽略单次超时</span>
+                </label>
+                <p className="fieldHint">
+                  图表与统计忽略孤立的超时样本，仅连续两次及以上的超时才显示并计数
+                </p>
+              </div>
             </div>
           )}
           {activeTab === "about" && (
