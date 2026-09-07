@@ -17,6 +17,7 @@ import {
   switchDataFile,
   saveDataFileAs,
   newDataFile,
+  applyWindowTheme,
 } from "./api/tauri";
 import { DetailPanel } from "./components/DetailPanel";
 import { SettingsPanel } from "./components/SettingsPanel";
@@ -242,6 +243,10 @@ export default function App() {
       .catch(() => {
         // 旧版系统不支持时忽略
       });
+    // Windows 11：标题栏直接采用主题表面/文字色；其余平台为空实现
+    applyWindowTheme(theme.background, theme.text).catch(() => {
+      // 颜色写入失败不影响应用运行
+    });
   }, [theme]);
 
   const selectedTarget = useMemo(

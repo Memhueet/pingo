@@ -357,3 +357,69 @@ pub async fn new_data_file(
         ping_running: state.scheduler.ping_running.load(Ordering::Acquire),
     })
 }
+
+/// Windows 11：把主题表面/文字色写入 DWM，让系统标题栏与主题同色。
+/// 其余平台与 Windows 10（无 DWMWA_CAPTION_COLOR 属性）为空实现，
+/// 标题栏维持 setTheme 的深浅两档语义。
+#[tauri::command]
+pub async fn apply_window_theme(
+    window: tauri::WebviewWindow,
+    background: String,
+    text: String,
+) -> CommandResult<()> {
+    apply_window_theme_impl(&window, &background, &text)
+}
+
+#[cfg(windows)]
+fn apply_window_theme_impl(
+    window: &tauri::WebviewWindow,
+    background: &str,
+    text: &str,
+) -> CommandResult<()> {
+    use windows_sys::Win32::Graphics::Dwm::{
+        DwmSetWindowAttribute, DWMWA_BORDER_COLOR, DWMWA_CAPTION_COLOR, DWMWA_TEXT_COLOR,
+    };
+
+    // 窗口句柄未就绪时跳过（外观效果，下次换主题时会重试），无效颜色则视为前端 bug 上报
+    let Some(hwnd) = window.hwnd().ok().map(|h| h.0) else {
+        return Ok(());
+    };
+    let Some(surface) = crate::models::parse_colorref(background) else {
+        return Err(AppError::Config(format!("invalid color: {background}")));
+    };
+    let Some(text_color) = crate::models::parse_colorref(text) else {
+        return Err(AppError::Config(format!("invalid color: {text}")));
+    };
+
+    // Windows 10 无这些属性，DwmSetWindowAttribute 返回错误，静默忽略
+    unsafe {
+        DwmSetWindowAttribute(
+            hwnd,
+            DWMWA_CAPTION_COLOR as u32,
+            &surface as *const u32 as *const core::ffi::c_void,
+            4,
+        );
+        DwmSetWindowAttribute(
+            hwnd,
+            DWMWA_TEXT_COLOR as u32,
+            &text_color as *const u32 as *const core::ffi::c_void,
+            4,
+        );
+        DwmSetWindowAttribute(
+            hwnd,
+            DWMWA_BORDER_COLOR as u32,
+            &surface as *const u32 as *const core::ffi::c_void,
+            4,
+        );
+    }
+    Ok(())
+}
+
+#[cfg(not(windows))]
+fn apply_window_theme_impl(
+    _window: &tauri::WebviewWindow,
+    _background: &str,
+    _text: &str,
+) -> CommandResult<()> {
+    Ok(())
+}

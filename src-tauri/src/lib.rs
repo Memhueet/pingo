@@ -52,6 +52,7 @@
              commands::switch_data_file,
              commands::save_data_file_as,
              commands::new_data_file,
+             commands::apply_window_theme,
          ])
          .run(tauri::generate_context!())
          .expect("failed to run Pingo");

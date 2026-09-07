@@ -111,6 +111,17 @@ pub fn is_valid_address(value: &str) -> bool {
     value.parse::<std::net::IpAddr>().is_ok()
 }
 
+/// `#RRGGBB`（大小写不敏感，# 可省略）→ Windows COLORREF（0x00BBGGRR）
+pub fn parse_colorref(hex: &str) -> Option<u32> {
+    let hex = hex.strip_prefix('#').unwrap_or(hex);
+    if hex.len() != 6 || !hex.chars().all(|c| c.is_ascii_hexdigit()) {
+        return None;
+    }
+    let value = u32::from_str_radix(hex, 16).ok()?;
+    let (r, g, b) = ((value >> 16) & 0xff, (value >> 8) & 0xff, value & 0xff);
+    Some((b << 16) | (g << 8) | r)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -123,6 +134,24 @@ mod tests {
         assert_eq!(settings.retention_days, 7);
         assert_eq!(settings.alert_threshold, 3);
         assert_eq!(settings.backoff_intervals, vec![10, 60, 180, 600, 1800, 3600]);
+    }
+
+    #[test]
+    fn parse_colorref_accepts_theme_hex_and_converts_byte_order() {
+        // COLORREF 字节序为 0x00BBGGRR，与 #RRGGBB 相反
+        assert_eq!(parse_colorref("#e0e5ec"), Some(0x00ec_e5_e0));
+        assert_eq!(parse_colorref("1E293B"), Some(0x003b_29_1e));
+        assert_eq!(parse_colorref("#000000"), Some(0));
+        assert_eq!(parse_colorref("#FFFFFF"), Some(0x00ff_ff_ff));
+    }
+
+    #[test]
+    fn parse_colorref_rejects_garbage() {
+        assert_eq!(parse_colorref(""), None);
+        assert_eq!(parse_colorref("#e0e5"), None);
+        assert_eq!(parse_colorref("#e0e5ecff"), None);
+        assert_eq!(parse_colorref("#e0e5eg"), None);
+        assert_eq!(parse_colorref("纯色"), None);
     }
 
     #[test]

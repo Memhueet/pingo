@@ -91,3 +91,8 @@ export function newDataFile(path: string) {
   return invoke<BootstrapPayload>("new_data_file", { path });
 }
 
+/** Windows 11：系统标题栏跟随主题表面色；其余平台为空实现 */
+export function applyWindowTheme(background: string, text: string) {
+  return invoke<void>("apply_window_theme", { background, text });
+}
+
