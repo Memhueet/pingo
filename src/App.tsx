@@ -164,13 +164,8 @@ export default function App() {
       const targetName = target?.target.alias || target?.target.address || event.sample.targetId;
 
       if (event.notify) {
-        if (event.sample.status === "timeout") {
-          addLog(`${targetName} ping超时`, "timeout");
-        } else if (event.sample.status === "error") {
-          addLog(`${targetName} ping失败: ${event.sample.errorKind}`, "error");
-        } else if (event.sample.status === "success") {
-          addLog(`${targetName} 连线恢复`, "success");
-        }
+        // 恢复通知只会在告警后的成功样本上出现；单次/未达阈值的失败保持静默
+        addLog(`${targetName} 连线恢复`, "success");
       }
 
       if (event.notifyAlerting) {

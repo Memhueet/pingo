@@ -14,47 +14,30 @@ use crate::models::*;
 use crate::ping;
 use crate::storage::Storage;
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-enum LastReportedStatus {
-    None,
-    Success,
-    Timeout,
-    Error,
-}
-
 pub struct TargetPingState {
     consecutive_timeouts: u32,
     last_ping_time: Option<chrono::DateTime<Utc>>,
-    last_reported_status: LastReportedStatus,
     last_alerting: bool,
 }
 
 impl TargetPingState {
-    /// 失败样本：推进连续失败计数，返回 (是否告警中, 是否通知状态变化, 是否刚进入告警)
-    fn observe_failure(&mut self, is_timeout: bool, threshold: u32) -> (bool, bool, bool) {
+    /// 失败样本：推进连续失败计数。返回是否"刚跨过阈值进入告警"（每次告警沿仅一次）；
+    /// 未达阈值的失败与失败类型切换一律静默
+    fn observe_failure(&mut self, threshold: u32) -> bool {
         self.consecutive_timeouts += 1;
-        let new_reported = if is_timeout {
-            LastReportedStatus::Timeout
-        } else {
-            LastReportedStatus::Error
-        };
-        let should_notify = self.last_reported_status != new_reported;
-        self.last_reported_status = new_reported;
         let is_alerting = self.consecutive_timeouts >= threshold;
-        let should_notify_alerting = is_alerting && !self.last_alerting;
+        let notify_alerting = is_alerting && !self.last_alerting;
         self.last_alerting = is_alerting;
-        (is_alerting, should_notify, should_notify_alerting)
+        notify_alerting
     }
 
-    /// 成功样本：失败计数归零。恢复本身已由 notify（"连线恢复"）表达，
-    /// notify_alerting 语义是"刚进入告警"，恢复时必须为 false。
-    fn observe_success(&mut self) -> (bool, bool, bool) {
-        let should_notify = self.last_reported_status != LastReportedStatus::Success
-            && self.last_reported_status != LastReportedStatus::None;
+    /// 成功样本：失败计数归零。仅当此前处于告警中才返回真（"连线恢复"），
+    /// 未告警的偶发失败恢复保持静默
+    fn observe_success(&mut self) -> bool {
+        let notify_recovery = self.last_alerting;
         self.consecutive_timeouts = 0;
-        self.last_reported_status = LastReportedStatus::Success;
         self.last_alerting = false;
-        (false, should_notify, false)
+        notify_recovery
     }
 }
 
@@ -63,7 +46,6 @@ impl Default for TargetPingState {
         Self {
             consecutive_timeouts: 0,
             last_ping_time: None,
-            last_reported_status: LastReportedStatus::None,
             last_alerting: false,
         }
     }
@@ -169,8 +151,11 @@ impl SchedulerState {
 #[serde(rename_all = "camelCase")]
 pub struct PingSampleEvent {
     pub sample: PingSample,
+    /// 目标当前是否处于告警（连续失败 ≥ 阈值）
     pub alerting: bool,
+    /// 连线恢复通知：仅当此前处于告警中又恢复成功时为真
     pub notify: bool,
+    /// 刚跨过阈值进入告警的那一刻为真（每次告警沿只发一次）
     pub notify_alerting: bool,
 }
 
@@ -348,17 +333,17 @@ async fn process_outcome(
         }
     }
 
-    let threshold = *state.alert_threshold.lock().await;
-    let (alerting, notify, notify_alerting) = {
-        let mut states = state.target_states.lock().await;
-        let ts = states.entry(job.target_id).or_default();
-        match sample.status {
-            PingStatus::Timeout | PingStatus::Error => {
-                ts.observe_failure(sample.status == PingStatus::Timeout, threshold)
-            }
-            PingStatus::Success => ts.observe_success(),
-        }
-    };
+                    let threshold = *state.alert_threshold.lock().await;
+                    let (alerting, notify, notify_alerting) = {
+                        let mut states = state.target_states.lock().await;
+                        let ts = states.entry(job.target_id).or_default();
+                        match sample.status {
+                            PingStatus::Timeout | PingStatus::Error => {
+                                (false, false, ts.observe_failure(threshold))
+                            }
+                            PingStatus::Success => (false, ts.observe_success(), false),
+                        }
+                    };
 
     let _ = app_handle.emit(
         "ping-sample",
@@ -446,7 +431,6 @@ mod tests {
         TargetPingState {
             consecutive_timeouts,
             last_ping_time: last_ping,
-            last_reported_status: LastReportedStatus::None,
             last_alerting: false,
         }
     }
@@ -508,47 +492,48 @@ mod tests {
     }
 
     #[test]
-    fn alerting_notified_once_then_recovery_notifies_success_only() {
+    fn alerting_fires_once_at_threshold_then_recovery_notifies() {
         let mut state = TargetPingState::default();
 
-        // 连续失败未达阈值：不进入告警
-        let (alerting, _, enter) = state.observe_failure(true, 3);
-        assert!(!alerting && !enter);
-        let (alerting, _, enter) = state.observe_failure(true, 3);
-        assert!(!alerting && !enter);
+        // 前两次失败未达阈值：完全静默
+        assert!(!state.observe_failure(3));
+        assert!(!state.observe_failure(3));
 
-        // 第 3 次失败达到阈值：进入告警，且只在这一沿通知一次
-        let (alerting, _, enter) = state.observe_failure(true, 3);
-        assert!(alerting && enter);
-        let (alerting, _, enter) = state.observe_failure(true, 3);
-        assert!(alerting && !enter);
+        // 第 3 次跨过阈值：告警沿只在这一刻为真
+        assert!(state.observe_failure(3));
+        assert!(!state.observe_failure(3));
 
-        // 恢复上线：只报"连线恢复"，不得再报"进入告警状态"
-        let (alerting, notify, notify_alerting) = state.observe_success();
-        assert!(!alerting);
-        assert!(notify);
-        assert!(!notify_alerting);
+        // 告警中的目标恢复上线：仅此时需要"连线恢复"通知
+        assert!(state.observe_success());
+        assert!(!state.observe_success());
     }
 
     #[test]
-    fn repeated_failures_do_not_repeat_notifications() {
+    fn single_timeout_blip_stays_silent() {
+        let mut state = TargetPingState::default();
+        // 单次偶发超时：不告警
+        assert!(!state.observe_failure(3));
+        // 未告警过的目标恢复：不发"连线恢复"
+        assert!(!state.observe_success());
+    }
+
+    #[test]
+    fn timeout_error_flapping_keeps_counting_without_notifications() {
+        let mut state = TargetPingState::default();
+        // 超时与错误类型交替同样推进连续失败计数，且类型切换不再单独通知
+        assert!(!state.observe_failure(3));
+        assert!(!state.observe_failure(3));
+        assert!(state.observe_failure(3));
+    }
+
+    #[test]
+    fn repeated_failures_after_alert_do_not_re_notify() {
         let mut state = TargetPingState::default();
         for _ in 0..5 {
-            state.observe_failure(true, 3);
+            state.observe_failure(3);
         }
         // 持续超时不重复通知
-        let (_, notify, notify_alerting) = state.observe_failure(true, 3);
-        assert!(!notify && !notify_alerting);
-        // 超时与错误之间切换视为状态变化，需要重新通知
-        let (_, notify, _) = state.observe_failure(false, 3);
-        assert!(notify);
-    }
-
-    #[test]
-    fn success_without_prior_failure_does_not_notify() {
-        let mut state = TargetPingState::default();
-        let (alerting, notify, notify_alerting) = state.observe_success();
-        assert!(!alerting && !notify && !notify_alerting);
+        assert!(!state.observe_failure(3));
     }
 
     #[test]
