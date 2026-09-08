@@ -60,7 +60,7 @@ npm run tauri build                              # 生产构建（桌面安装�
 ## UI 约定
 
 - 桌面应用审美遵循"简约反装饰"：克制用色、亮暗主题下都要可读，弹窗、字体、圆角遵循现有设计令牌基准（详见 `docs/ui-design.md` 与 `docs/ui-naming-guide.md`）。
-- 视觉体系为新拟态（Soft UI）：全局单色表面，立体感仅由 `shadowLight`/`shadowDark` 双向阴影塑造（凸起 raised / 凹陷 inset）；禁止半透明表面、背景模糊与硬边框装饰（唯一例外：弹窗遮罩 `.modalOverlay`）。
+- 视觉体系为新拟态（Soft UI）：三层同色相不透明表面按明度分层——顶栏/左右面板（`panelBackground`）比画布（`background`）深一档，卡片/按钮（`cardBackground`）比画布亮一档；立体感再由 `shadowLight`/`shadowDark` 双向阴影塑造（凸起 raised / 凹陷 inset）；禁止半透明表面、背景模糊与硬边框装饰（唯一例外：弹窗遮罩 `.modalOverlay`）。新增主题时须保持分层关系：`shadowLight` 亮于 `cardBackground`、`shadowDark` 深于 `panelBackground`，文字对三层表面 ≥ 4.5:1。
 - 阴影不得与遮罩模糊叠加（弹窗去掉凸起阴影是有意为之，勿"改回"）。
 - 面板显隐采用 VS Code 式顶栏按钮交互；目标卡片为三行布局，以 IP 为主标识。
 - 需防误触：涉及删除/清空历史等破坏性操作要有确认；WebView 默认右键菜单已禁用，勿重新放开。

@@ -8,7 +8,7 @@
 
 ## 设计原则：新拟态（Neumorphism / Soft UI）
 
-1. **单色表面**：背景与元素同色（`--theme-background` = `--theme-panelBackground` = `--theme-cardBackground`），不使用半透明表面。
+1. **分层单色表面**：三层不透明表面同色相、按明度分层——顶栏/左右面板 `--theme-panelBackground` 比画布 `--theme-background` 深一档（后退的"框架"），卡片/按钮 `--theme-cardBackground` 比画布亮一档（浮起的"内容"）；不使用半透明表面。分层约束：`shadowLight` 必须亮于 `cardBackground`、`shadowDark` 必须深于 `panelBackground`。
 2. **光影塑形**：立体感仅由双向阴影塑造——左上高光 `--theme-shadowLight` + 右下暗影 `--theme-shadowDark`：
    - 凸起（raised）：静止的卡片、按钮、弹窗，使用 `--shadow-raised-sm / -raised / -raised-lg`；
    - 凹陷（inset）：输入井、按下态，使用 `--shadow-inset / -inset-sm`。
@@ -79,7 +79,9 @@ interface Theme {
   name: string;
   category: "light" | "neutral" | "dark";
   background: string;
+  /** 框架表面：顶栏与左右面板，比画布深一档 */
   panelBackground: string;
+  /** 内容表面：卡片、按钮等浮起元素，比画布亮一档 */
   cardBackground: string;
   text: string;
   textSecondary: string;

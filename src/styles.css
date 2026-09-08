@@ -1,7 +1,8 @@
 /*
  * Pingo — 新拟态（Neumorphism / Soft UI）样式
- * 规则：全局单色表面（背景与元素同色），立体感仅由
- * shadowLight（左上高光）+ shadowDark（右下暗影）双向阴影塑造。
+ * 规则：三层同色相不透明表面按明度分层——面板/顶栏（panelBackground）
+ * 比画布（background）深一档，卡片/按钮（cardBackground）比画布亮一档；
+ * 立体感再由 shadowLight（左上高光）+ shadowDark（右下暗影）双向阴影塑造。
  * 凸起 = raised，按下/选中/输入井 = inset（凹陷）。
  * 禁止半透明表面、背景模糊与硬边框。
  */
@@ -171,7 +172,7 @@ button:focus-visible {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   align-items: center;
-  background: var(--theme-cardBackground);
+  background: var(--theme-panelBackground);
   box-shadow: 0 4px 14px var(--theme-shadowDark);
   flex-shrink: 0;
   position: relative;
@@ -657,6 +658,8 @@ button:focus-visible {
   position: relative;
   user-select: none;
   -webkit-user-select: none;
+  background: var(--theme-cardBackground);
+  border-radius: var(--radius-md);
   box-shadow: var(--shadow-raised-sm);
 }
 
@@ -1505,6 +1508,9 @@ button:focus-visible {
   display: flex;
   align-items: center;
   justify-content: center;
+  /* 预览面板层：展示主题的三层表面层次（画布 → 面板 → 卡片） */
+  background: var(--theme-preview-panel, #d2d9e3);
+  border-radius: var(--radius-sm);
 }
 
 .previewCard {

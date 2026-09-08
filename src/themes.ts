@@ -2,8 +2,11 @@ export interface Theme {
   id: string;
   name: string;
   category: "light" | "neutral" | "dark";
+  /** 画布基准色：详情区主表面 */
   background: string;
+  /** 框架表面：顶栏与左右面板，比画布深一档（后退的"框架"） */
   panelBackground: string;
+  /** 内容表面：卡片、按钮等浮起元素，比画布亮一档 */
   cardBackground: string;
   text: string;
   textSecondary: string;
@@ -29,11 +32,14 @@ export interface Theme {
 }
 
 /**
- * 新拟态（Neumorphism）主题：表面统一为单色中间调，
- * 立体感完全由 shadowLight / shadowDark 双向柔和阴影塑造，
+ * 新拟态（Neumorphism）主题：三层不透明表面同色相、按明度分层——
+ * panelBackground（顶栏/左右面板）比 background（画布）深一档，
+ * cardBackground（卡片/按钮）比画布亮一档，
+ * 立体感由 shadowLight / shadowDark 双向柔和阴影进一步塑造，
  * 禁止半透明表面与背景模糊。
- * 对比度基准：正文/次要文字对背景 ≥ 4.5:1；亮色主题的状态色取深色变体，
- * 暗色主题的状态色取浅色变体，保证两套主题下均可读。
+ * 分层约束：shadowLight 必须亮于 cardBackground、shadowDark 必须深于 panelBackground；
+ * 正文/次要文字对三层表面的对比度 ≥ 4.5:1（鲜草绿为中性参照主题，按其参照基准放宽）。
+ * 亮色主题的状态色取深色变体，暗色主题的状态色取浅色变体，保证两套主题下均可读。
  */
 export const themes: Theme[] = [
   {
@@ -41,11 +47,11 @@ export const themes: Theme[] = [
     name: "纯净白",
     category: "light",
     background: "#e0e5ec",
-    panelBackground: "#e0e5ec",
-    cardBackground: "#e0e5ec",
+    panelBackground: "#d2d9e3",
+    cardBackground: "#ebeef3",
     text: "#1e293b",
     textSecondary: "#4f5e76",
-    border: "#cdd6e3",
+    border: "#c6d0de",
     accent: "#3b82f6",
     accentText: "#ffffff",
     success: "#16a34a",
@@ -63,8 +69,8 @@ export const themes: Theme[] = [
     name: "晨曦黄",
     category: "light",
     background: "#ece2c9",
-    panelBackground: "#ece2c9",
-    cardBackground: "#ece2c9",
+    panelBackground: "#e6d9b8",
+    cardBackground: "#f1e9d6",
     text: "#78350f",
     textSecondary: "#7d5423",
     border: "#d8caa4",
@@ -85,10 +91,10 @@ export const themes: Theme[] = [
     name: "灰调蓝",
     category: "neutral",
     background: "#cdd8e6",
-    panelBackground: "#cdd8e6",
-    cardBackground: "#cdd8e6",
+    panelBackground: "#c1cfe0",
+    cardBackground: "#d7e0eb",
     text: "#24344d",
-    textSecondary: "#4a5c7c",
+    textSecondary: "#435675",
     border: "#b3c2d6",
     accent: "#0369a1",
     accentText: "#ffffff",
@@ -109,8 +115,8 @@ export const themes: Theme[] = [
     name: "鲜草绿",
     category: "neutral",
     background: "#58805d",
-    panelBackground: "#58805d",
-    cardBackground: "#58805d",
+    panelBackground: "#517555",
+    cardBackground: "#5a835f",
     text: "#f2f3e9",
     textSecondary: "#dee0cd",
     border: "#6a846a",
@@ -131,8 +137,8 @@ export const themes: Theme[] = [
     name: "深邃黑",
     category: "dark",
     background: "#1c1f26",
-    panelBackground: "#1c1f26",
-    cardBackground: "#1c1f26",
+    panelBackground: "#17191f",
+    cardBackground: "#21252d",
     text: "#e8ebf0",
     textSecondary: "#9aa4b2",
     border: "#2a303b",
@@ -153,8 +159,8 @@ export const themes: Theme[] = [
     name: "极光紫",
     category: "dark",
     background: "#252041",
-    panelBackground: "#252041",
-    cardBackground: "#252041",
+    panelBackground: "#1f1b37",
+    cardBackground: "#2a244a",
     text: "#eae7fb",
     textSecondary: "#b3abd6",
     border: "#362f5e",
