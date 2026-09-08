@@ -385,10 +385,10 @@ fn apply_window_theme_impl(
         return Ok(());
     };
     let Some(surface) = crate::models::parse_colorref(background) else {
-        return Err(AppError::Config(format!("invalid color: {background}")));
+        return Err(AppError::Config(format!("invalid color: {background}")).into());
     };
     let Some(text_color) = crate::models::parse_colorref(text) else {
-        return Err(AppError::Config(format!("invalid color: {text}")));
+        return Err(AppError::Config(format!("invalid color: {text}")).into());
     };
 
     // Windows 10 无这些属性，DwmSetWindowAttribute 返回错误，静默忽略
