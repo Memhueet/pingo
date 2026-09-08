@@ -1,26 +1,52 @@
-import type { TargetStatus } from "../types";
+import { useEffect, useState } from "react";
+import type { FullStats, PingSample, TargetStatus } from "../types";
 import type { Theme } from "../themes";
 import { LatencyChart } from "./LatencyChart";
 import { GlassCard } from "./GlassCard";
 import { filterIsolatedTimeouts, statsView } from "../utils/stats";
+import { loadAllSamples } from "../api/tauri";
+
+/** 全览模式的冻结快照：样本、统计计数器与拍摄时刻一起定格 */
+interface FrozenSnapshot {
+  samples: PingSample[];
+  stats: FullStats;
+  takenAt: number;
+}
 
 export function DetailPanel({
   status,
   pingTimeoutSecs,
   theme,
   ignoreSingleTimeout,
+  onError,
 }: {
   status: TargetStatus;
   pingTimeoutSecs: number;
   theme: Theme;
   ignoreSingleTimeout: boolean;
+  onError?: (message: string) => void;
 }) {
+  const [frozen, setFrozen] = useState<FrozenSnapshot | null>(null);
+
+  useEffect(() => {
+    setFrozen(null);
+  }, [status.target.id]);
+
+  const takeSnapshot = async () => {
+    try {
+      const samples = await loadAllSamples(status.target.id);
+      setFrozen({ samples, stats: status.stats, takenAt: Date.now() });
+    } catch (e) {
+      onError?.((e as any)?.message ?? String(e));
+    }
+  };
+
   const visibleSamples = ignoreSingleTimeout
     ? filterIsolatedTimeouts(status.samples)
     : status.samples;
-  // 头部统计读全历史计数器；图表过滤仅影响样本窗口，不回写统计
+  const chartSamples = frozen ? frozen.samples : visibleSamples;
   const { avgLatency, maxLatency, timeoutCount } = statsView(
-    status.stats,
+    frozen ? frozen.stats : status.stats,
     ignoreSingleTimeout,
   );
 
@@ -30,6 +56,25 @@ export function DetailPanel({
         <div>
           <h2>{status.target.alias}</h2>
           <p>{status.target.address}</p>
+        </div>
+        <div className="snapshotActions">
+          {frozen ? (
+            <>
+              <span className="frozenBadge">
+                快照于 {new Date(frozen.takenAt).toLocaleTimeString()}
+              </span>
+              <button type="button" className="resetBtn" onClick={takeSnapshot}>
+                刷新到最新
+              </button>
+              <button type="button" className="resetBtn" onClick={() => setFrozen(null)}>
+                返回实时
+              </button>
+            </>
+          ) : (
+            <button type="button" className="resetBtn" onClick={takeSnapshot}>
+              查看全部
+            </button>
+          )}
         </div>
         <div className="statRow">
           <span>Average {avgLatency.toFixed(1)} ms</span>
@@ -42,7 +87,7 @@ export function DetailPanel({
         <LatencyChart
           key={theme.id}
           targetId={status.target.id}
-          samples={visibleSamples}
+          samples={chartSamples}
           pingTimeoutMs={pingTimeoutSecs * 1000}
           theme={theme}
         />

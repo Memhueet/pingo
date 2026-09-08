@@ -654,6 +654,7 @@ export default function App() {
               pingTimeoutSecs={settings.pingTimeoutSeconds}
               theme={theme}
               ignoreSingleTimeout={settings.ignoreSingleTimeout}
+              onError={(message) => setAppError(message)}
             />
           ) : (
             <div className="emptyDetail">选择目标查看详情</div>

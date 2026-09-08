@@ -52,6 +52,11 @@ export function loadSamples(
   });
 }
 
+/** 全览模式取全量快照；日后若改为 Rust 端分箱降采样，仅替换此实现 */
+export function loadAllSamples(targetId: string) {
+  return loadSamples(targetId);
+}
+
 export function openHistoryFile(path: string) {
   return invoke<HistoryFilePayload>("open_history_file", { path });
 }
