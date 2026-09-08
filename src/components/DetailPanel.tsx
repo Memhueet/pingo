@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { FullStats, PingSample, TargetStatus } from "../types";
 import type { Theme } from "../themes";
 import { LatencyChart } from "./LatencyChart";
@@ -27,16 +27,27 @@ export function DetailPanel({
   onError?: (message: string) => void;
 }) {
   const [frozen, setFrozen] = useState<FrozenSnapshot | null>(null);
+  /** 快照轮次守卫：切换目标/返回实时/再次取数都会递增，迟到响应据此丢弃 */
+  const snapshotEpochRef = useRef(0);
 
   useEffect(() => {
+    snapshotEpochRef.current += 1;
     setFrozen(null);
   }, [status.target.id]);
 
   const takeSnapshot = async () => {
+    const epoch = ++snapshotEpochRef.current;
+    const targetId = status.target.id;
     try {
-      const samples = await loadAllSamples(status.target.id);
+      const samples = await loadAllSamples(targetId);
+      if (epoch !== snapshotEpochRef.current) {
+        return;
+      }
       setFrozen({ samples, stats: status.stats, takenAt: Date.now() });
     } catch (e) {
+      if (epoch !== snapshotEpochRef.current) {
+        return;
+      }
       onError?.((e as any)?.message ?? String(e));
     }
   };
@@ -66,7 +77,10 @@ export function DetailPanel({
               <button type="button" className="resetBtn" onClick={takeSnapshot}>
                 刷新到最新
               </button>
-              <button type="button" className="resetBtn" onClick={() => setFrozen(null)}>
+              <button type="button" className="resetBtn" onClick={() => {
+                snapshotEpochRef.current += 1;
+                setFrozen(null);
+              }}>
                 返回实时
               </button>
             </>
