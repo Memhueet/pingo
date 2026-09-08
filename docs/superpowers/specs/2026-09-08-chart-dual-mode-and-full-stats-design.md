@@ -40,14 +40,16 @@ pub struct FullStats {
     pub latency_max: f64,
     pub timeout_count: u64,        // raw：全部超时样本数
     pub filtered_timeout_count: u64, // "忽略单次超时"口径：连续 ≥2 的超时才计入
+    pub pending_timeout_run: u64,  // 尾部未确认的超时 run 长度，随基线传递
 }
 ```
 
 - 语义与现有 `calculateTargetStats` 完全对齐：`avgLatency = latency_sum / success_count`（无成功样本时 0），`maxLatency = latency_max`，`timeoutRate = timeout / total`。成功与错误样本在两种口径下都原样保留，**avg / max 不受"忽略单次超时"开关影响，仅 Timeouts 数字随开关在 raw / filtered 间取值**；
 - **filtered 状态机**（前后端同一算法，实现为纯函数便于测试）：按 `sentAt` 顺序扫描，`timeout` 样本进入 pending run；run 长度 ≥ 2 时整段计入；**尾部未确认的 run 不计入**（与 `filterIsolatedTimeouts` "末尾待确认前同样隐藏"的既有语义一致）；`error` 样本视作非超时，中断 run；
-- 增量更新（`applyPingSample` 内 O(1)）：需在 `TargetStatus` 上额外维护簿记字段 `pendingTimeoutRun: number`（不跨 IPC）。样本为 timeout → pending +1、raw timeout_count +1；样本为非 timeout → pending ≥ 2 则 filtered += pending，pending 清零；success 且 latencyMs 非 null → success_count +1、sum += latency、max 取大者；total_count 总是 +1；
+- **`pendingTimeoutRun` 是 `FullStats` 的字段、随基线跨 IPC**：聚合基线必须把尾部未确认的 run 长度传给前端延续状态机——若基线丢弃它，"历史末尾 1 次超时 + 启动后第 1 次超时"按语义应计为连续 2 次，丢弃即漏计。`applyPingSample` 直接读写 `stats.pendingTimeoutRun`，`TargetStatus` 只新增 `stats` 一个字段；
+- 增量更新（`applyPingSample` 内 O(1)）：样本为 timeout → pending +1、raw timeout_count +1；样本为非 timeout → pending ≥ 2 则 filtered += pending，pending 清零；success 且 latencyMs 非 null → success_count +1、sum += latency、max 取大者；total_count 总是 +1；
 - **计数器不受窗口裁剪影响**：裁剪只删图表窗口数组，统计口径是全历史；
-- `TargetStatus` 增加 `stats: FullStats` 与 `pendingTimeoutRun` 两个字段；`createTargetStatus` 清零；`clear_history` 前端处理器一并清零；
+- `TargetStatus` 增加 `stats: FullStats` 字段；`createTargetStatus` 清零；`clear_history` 前端处理器一并清零；
 - 统计消费点（`TargetCard`、`DetailPanel` 头部、`Toolbar` 全局统计、延迟排序）全部改读 `status.stats`，经小工具函数 `statsView(stats, ignoreSingleTimeout)` 派生现 `TargetStats` 形状（含 avg/max/timeoutCount/totalCount/timeoutRate/successCount）。`stats.ts` 保留 `filterIsolatedTimeouts`（图表窗口过滤仍用）与 `calculateTargetStats`（测试对照基准）。
 
 ## 2. Rust：聚合基线与载荷
@@ -110,9 +112,9 @@ Rust：
 
 1. `feat: 设置新增图表实时窗口（预设档位 + 自定义）`
 2. `feat: 数据文件载荷附带各目标全历史统计基线`
-3. `refactor: 统计消费点改读全历史计数器，采样增量更新`
+3. `refactor: 统计消费点改读全历史计数器，采样增量更新并按宽容度裁剪窗口`
 4. `perf: 打开数据文件不再全量加载样本，选中目标按窗口加载`
-5. `perf: 图表数据数组复用，窗口宽容度批量裁剪`
+5. `perf: 图表数据数组复用，增量追加与整体重建按前缀判定切换`
 6. `feat: 详情面板新增查看全部（冻结快照）模式`
 
 ## 验证策略与边界
