@@ -714,7 +714,8 @@ button:focus-visible {
   letter-spacing: 0.2px;
   white-space: nowrap;
   max-width: 100%;
-  overflow: hidden;
+  /* 不能用 overflow:hidden（会裁掉状态点的光晕），收缩截断由 .tcIpText 承担 */
+  min-width: 0;
 }
 
 /* flex 容器上 text-overflow 不生效，省略号由内层块级文本承载 */
