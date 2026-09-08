@@ -144,43 +144,55 @@ export function SettingsPanel({ settings, sortMode, onClose, onSave, onSortModeC
               </label>
               <div className="settingsFieldGrid">
                 <label>
-                  Ping 间隔 (秒)
-                  <input
-                    type="number"
-                    min="1"
-                    value={draft.pingIntervalSeconds}
-                    onChange={(event) => setNumber("pingIntervalSeconds", event.target.value)}
-                  />
+                  Ping 间隔
+                  <span className="numInput">
+                    <input
+                      type="number"
+                      min="1"
+                      value={draft.pingIntervalSeconds}
+                      onChange={(event) => setNumber("pingIntervalSeconds", event.target.value)}
+                    />
+                    <span>秒</span>
+                  </span>
                 </label>
                 <label>
-                  Ping 超时 (秒)
-                  <input
-                    type="number"
-                    min="1"
-                    value={draft.pingTimeoutSeconds}
-                    onChange={(event) => setNumber("pingTimeoutSeconds", event.target.value)}
-                  />
+                  Ping 超时
+                  <span className="numInput">
+                    <input
+                      type="number"
+                      min="1"
+                      value={draft.pingTimeoutSeconds}
+                      onChange={(event) => setNumber("pingTimeoutSeconds", event.target.value)}
+                    />
+                    <span>秒</span>
+                  </span>
                 </label>
                 <label>
-                  历史保留天数
-                  <input
-                    type="number"
-                    min="1"
-                    value={draft.retentionDays}
-                    onChange={(event) => setNumber("retentionDays", event.target.value)}
-                  />
+                  历史保留
+                  <span className="numInput">
+                    <input
+                      type="number"
+                      min="1"
+                      value={draft.retentionDays}
+                      onChange={(event) => setNumber("retentionDays", event.target.value)}
+                    />
+                    <span>天</span>
+                  </span>
                 </label>
                 <label>
                   告警阈值
-                  <input
-                    type="number"
-                    min="1"
-                    value={draft.alertThreshold}
-                    onChange={(event) => setNumber("alertThreshold", event.target.value)}
-                  />
+                  <span className="numInput">
+                    <input
+                      type="number"
+                      min="1"
+                      value={draft.alertThreshold}
+                      onChange={(event) => setNumber("alertThreshold", event.target.value)}
+                    />
+                    <span>次</span>
+                  </span>
                 </label>
               </div>
-              <div className="settingsField">
+              <div className="settingsField settingsSection">
                 <div className="settingsFieldHeader">
                   <span>失败退避间隔</span>
                   <button
@@ -218,6 +230,21 @@ export function SettingsPanel({ settings, sortMode, onClose, onSave, onSortModeC
                     </div>
                   ))}
                 </div>
+              </div>
+              <div className="settingsField settingsSection">
+                <label className="checkboxRow">
+                  <input
+                    type="checkbox"
+                    checked={draft.ignoreSingleTimeout}
+                    onChange={(event) =>
+                      setDraft({ ...draft, ignoreSingleTimeout: event.target.checked })
+                    }
+                  />
+                  <span>忽略单次超时</span>
+                </label>
+                <p className="fieldHint">
+                  图表与统计忽略孤立的超时样本，仅连续两次及以上的超时才显示并计数
+                </p>
               </div>
             </div>
           )}
@@ -314,21 +341,6 @@ export function SettingsPanel({ settings, sortMode, onClose, onSave, onSortModeC
                   )}
                 </div>
               </label>
-              <div className="settingsField">
-                <label className="checkboxRow">
-                  <input
-                    type="checkbox"
-                    checked={draft.ignoreSingleTimeout}
-                    onChange={(event) =>
-                      setDraft({ ...draft, ignoreSingleTimeout: event.target.checked })
-                    }
-                  />
-                  <span>忽略单次超时</span>
-                </label>
-                <p className="fieldHint">
-                  图表与统计忽略孤立的超时样本，仅连续两次及以上的超时才显示并计数
-                </p>
-              </div>
             </div>
           )}
           {activeTab === "about" && (

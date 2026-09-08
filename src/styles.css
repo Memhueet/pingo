@@ -1143,6 +1143,54 @@ button:focus-visible {
   margin-top: 0;
 }
 
+/* 数值输入井：单位内嵌右侧，输入框透明化融入井中 */
+.numInput {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 34px;
+  padding: 0 10px;
+  border-radius: var(--radius-md);
+  background: var(--theme-background);
+  box-shadow: var(--shadow-inset-sm);
+  box-sizing: border-box;
+}
+
+.numInput input {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  padding: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.numInput input:focus {
+  outline: none;
+  box-shadow: none;
+}
+
+.numInput:focus-within {
+  box-shadow: var(--shadow-inset-sm), 0 0 0 2px var(--accent-ring);
+}
+
+.numInput > span {
+  flex-shrink: 0;
+  font-size: var(--font-size-sm);
+  color: var(--theme-textSecondary);
+}
+
+/* 隐藏原生数字步进按钮，避免系统控件破坏新拟态表面 */
+.modalPanel input[type="number"] {
+  appearance: textfield;
+}
+
+.modalPanel input[type="number"]::-webkit-outer-spin-button,
+.modalPanel input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
 /* 失败退避间隔编辑 */
 .settingsField {
   display: flex;
@@ -1183,14 +1231,17 @@ button:focus-visible {
   line-height: 1.6;
 }
 
-/* 复选框行：主题强调色跟随当前主题 */
-.checkboxRow {
+/* 复选框行：主题强调色跟随当前主题
+   选择器带 .modalPanel 前缀抬高特异性，避免被 `.modalPanel label` 的 grid 布局压制 */
+.modalPanel label.checkboxRow,
+.panel label.checkboxRow {
   display: flex;
   align-items: center;
   gap: var(--spacing-sm);
   cursor: pointer;
   font-size: var(--font-size-md);
   color: var(--theme-text);
+  margin-top: 0;
 }
 
 .checkboxRow input[type="checkbox"] {
