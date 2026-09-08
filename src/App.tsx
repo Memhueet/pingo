@@ -26,7 +26,7 @@ import { TargetGrid } from "./components/TargetGrid";
 import { Toolbar } from "./components/Toolbar";
 import { EventLog } from "./components/EventLog";
 import { applyPingSample, createTargetStatus, loadAppearance, normalizeSettings, saveAppearance } from "./state/usePingoStore";
-import { calculateTargetStats } from "./utils/stats";
+import { statsView } from "./utils/stats";
 import type { AppSettings, Target, TargetSaveData, TargetStatus } from "./types";
 import { defaultBackoffIntervals } from "./types";
 import { isValidAddress } from "./validation";
@@ -142,6 +142,12 @@ export default function App() {
     targetsRef.current = targets;
   }, [targets]);
 
+  // 事件回调经 ref 读当前窗口值，避免订阅随设置变化反复重建
+  const chartWindowSecondsRef = useRef(settings.chartWindowSeconds);
+  useEffect(() => {
+    chartWindowSecondsRef.current = settings.chartWindowSeconds;
+  }, [settings.chartWindowSeconds]);
+
   useEffect(() => {
     let cancelled = false;
 
@@ -149,7 +155,14 @@ export default function App() {
       .then((payload) => {
         if (cancelled) return;
         setSettings(normalizeSettings(payload.settings));
-        setTargets(payload.targets.map(createTargetStatus));
+        setTargets(
+          payload.targets.map((t) =>
+            createTargetStatus(
+              t,
+              payload.targetStats.find((e) => e.targetId === t.id)?.stats,
+            ),
+          ),
+        );
         setPingRunning(payload.pingRunning);
       })
       .catch((e) => {
@@ -176,7 +189,7 @@ export default function App() {
       setTargets((current) =>
         current.map((status) =>
           status.target.id === event.sample.targetId
-            ? applyPingSample(status, event.sample, event.alerting)
+            ? applyPingSample(status, event.sample, event.alerting, chartWindowSecondsRef.current)
             : status,
         ),
       );
@@ -260,9 +273,9 @@ export default function App() {
       if (status.target.enabled) enabled++;
       if (status.alerting) alerting++;
       if (status.target.enabled) {
-        const stats = calculateTargetStats(status.samples);
-        if (stats.successes.length > 0) {
-          latencySum += stats.avgLatency;
+        const view = statsView(status.stats, settings.ignoreSingleTimeout);
+        if (view.successCount > 0) {
+          latencySum += view.avgLatency;
           latencyTargetCount++;
         }
       }
@@ -273,7 +286,7 @@ export default function App() {
       alerting,
       avgLatency: latencyTargetCount > 0 ? latencySum / latencyTargetCount : 0,
     };
-  }, [targets]);
+  }, [targets, settings.ignoreSingleTimeout]);
 
   const sortedTargets = useMemo(() => {
     const direction = sortDirection === "asc" ? 1 : -1;
@@ -289,11 +302,10 @@ export default function App() {
         return direction * (new Date(a.target.createdAt).getTime() - new Date(b.target.createdAt).getTime());
       }
       if (sortMode === "latency") {
-        const avgLatency = (s: TargetStatus) => {
-          const successes = s.samples.filter((sm) => sm.status === "success" && sm.latencyMs != null);
-          if (successes.length === 0) return Infinity;
-          return successes.reduce((sum, sm) => sum + (sm.latencyMs ?? 0), 0) / successes.length;
-        };
+        const avgLatency = (s: TargetStatus) =>
+          s.stats.successCount > 0
+            ? s.stats.latencySum / s.stats.successCount
+            : Infinity;
         return direction * (avgLatency(a) - avgLatency(b));
       }
       return 0;
@@ -450,7 +462,7 @@ export default function App() {
       const fileName = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}-${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}${String(now.getSeconds()).padStart(2, '0')}-pingo-history.db`;
       const filePath = `${dirPath}/${fileName}`;
       const payload = await newDataFile(filePath);
-      setTargets(payload.targets.map(createTargetStatus));
+      setTargets(payload.targets.map((t) => createTargetStatus(t)));
       setSettings(normalizeSettings(payload.settings));
       setPingRunning(payload.pingRunning);
       setSelectedTargetId(null);
@@ -474,7 +486,7 @@ export default function App() {
         return;
       }
       const payload = await switchDataFile(path);
-      const initialTargets = payload.targets.map(createTargetStatus);
+      const initialTargets = payload.targets.map((t) => createTargetStatus(t));
       setTargets(initialTargets);
       setSettings(normalizeSettings(payload.settings));
       setPingRunning(payload.pingRunning);
@@ -619,6 +631,7 @@ export default function App() {
               hasActiveFile={hasActiveFile}
               aliasColor={effectiveAliasColor}
               addressColor={effectiveAddressColor}
+              ignoreSingleTimeout={settings.ignoreSingleTimeout}
             />
           </aside>
         )}

@@ -2,23 +2,34 @@ import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { DetailPanel } from "../components/DetailPanel";
 import { getThemeById } from "../themes";
-import type { TargetStatus } from "../types";
+import { applySampleToStats, emptyFullStats } from "../utils/stats";
+import type { PingSample, TargetStatus } from "../types";
+
+function statusWithSamples(base: Omit<TargetStatus, "stats" | "samples">, samples: PingSample[]): TargetStatus {
+  return {
+    ...base,
+    samples,
+    stats: samples.reduce((acc, s) => applySampleToStats(acc, s), emptyFullStats()),
+  };
+}
 
 describe("DetailPanel", () => {
   it("shows statistics for selected target", () => {
-    const status: TargetStatus = {
-      target: {
-        id: "target-1",
-        address: "192.168.1.1",
-        alias: "Router",
-        enabled: true,
-        createdAt: "2026-06-18T00:00:00Z",
-        updatedAt: "2026-06-18T00:00:00Z",
+    const status = statusWithSamples(
+      {
+        target: {
+          id: "target-1",
+          address: "192.168.1.1",
+          alias: "Router",
+          enabled: true,
+          createdAt: "2026-06-18T00:00:00Z",
+          updatedAt: "2026-06-18T00:00:00Z",
+        },
+        latestSample: null,
+        consecutiveTimeouts: 1,
+        alerting: false,
       },
-      latestSample: null,
-      consecutiveTimeouts: 1,
-      alerting: false,
-      samples: [
+      [
         {
           id: "sample-1",
           targetId: "target-1",
@@ -36,7 +47,7 @@ describe("DetailPanel", () => {
           errorKind: "timeout",
         },
       ],
-    };
+    );
 
     render(
       <DetailPanel
@@ -53,19 +64,21 @@ describe("DetailPanel", () => {
   });
 
   it("hides isolated timeout stats when ignoreSingleTimeout is on", () => {
-    const status: TargetStatus = {
-      target: {
-        id: "target-1",
-        address: "192.168.1.1",
-        alias: "Router",
-        enabled: true,
-        createdAt: "2026-06-18T00:00:00Z",
-        updatedAt: "2026-06-18T00:00:00Z",
+    const status = statusWithSamples(
+      {
+        target: {
+          id: "target-1",
+          address: "192.168.1.1",
+          alias: "Router",
+          enabled: true,
+          createdAt: "2026-06-18T00:00:00Z",
+          updatedAt: "2026-06-18T00:00:00Z",
+        },
+        latestSample: null,
+        consecutiveTimeouts: 1,
+        alerting: false,
       },
-      latestSample: null,
-      consecutiveTimeouts: 1,
-      alerting: false,
-      samples: [
+      [
         {
           id: "sample-1",
           targetId: "target-1",
@@ -83,7 +96,7 @@ describe("DetailPanel", () => {
           errorKind: "timeout",
         },
       ],
-    };
+    );
 
     render(
       <DetailPanel

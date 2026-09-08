@@ -5,6 +5,7 @@ import {
   loadAppearance,
   normalizeSettings,
   saveAppearance,
+  trimSamplesWindow,
 } from "../state/usePingoStore";
 import type { AppSettings, PingSample, Target } from "../types";
 import { defaultBackoffIntervals } from "../types";
@@ -49,6 +50,14 @@ function makeSample(overrides?: Partial<PingSample>): PingSample {
   };
 }
 
+function sampleAt(index: number, overrides?: Partial<PingSample>): PingSample {
+  return makeSample({
+    id: `sample-${index}`,
+    sentAt: new Date(Date.parse("2026-06-18T00:00:00Z") + index * 5000).toISOString(),
+    ...overrides,
+  });
+}
+
 describe("createTargetStatus", () => {
   it("creates initial status with empty samples", () => {
     const target = makeTarget();
@@ -64,7 +73,7 @@ describe("applyPingSample", () => {
   it("adds sample and resets timeouts on success", () => {
     const status = createTargetStatus(makeTarget());
     const sample = makeSample({ status: "success", latencyMs: 5 });
-    const updated = applyPingSample(status, sample, false);
+    const updated = applyPingSample(status, sample, false, 3600);
     expect(updated.samples).toHaveLength(1);
     expect(updated.latestSample?.latencyMs).toBe(5);
     expect(updated.consecutiveTimeouts).toBe(0);
@@ -73,9 +82,66 @@ describe("applyPingSample", () => {
   it("increments consecutive timeouts on timeout", () => {
     const status = createTargetStatus(makeTarget());
     const sample = makeSample({ status: "timeout", latencyMs: null });
-    const updated = applyPingSample(status, sample, true);
+    const updated = applyPingSample(status, sample, true, 3600);
     expect(updated.consecutiveTimeouts).toBe(1);
     expect(updated.alerting).toBe(true);
+  });
+});
+
+describe("applyPingSample 统计计数器", () => {
+  it("成功样本推进延迟合计与最大值", () => {
+    let status = createTargetStatus(makeTarget());
+    status = applyPingSample(status, sampleAt(0, { latencyMs: 10 }), false, 3600);
+    status = applyPingSample(status, sampleAt(1, { latencyMs: 30 }), false, 3600);
+    expect(status.stats.totalCount).toBe(2);
+    expect(status.stats.successCount).toBe(2);
+    expect(status.stats.latencySum).toBe(40);
+    expect(status.stats.latencyMax).toBe(30);
+  });
+
+  it("超时样本推进 raw 计数，连续 ≥2 时计入 filtered", () => {
+    let status = createTargetStatus(makeTarget());
+    status = applyPingSample(status, sampleAt(0, { status: "timeout", latencyMs: null }), true, 3600);
+    expect(status.stats.timeoutCount).toBe(1);
+    expect(status.stats.filteredTimeoutCount).toBe(0);
+    status = applyPingSample(status, sampleAt(1, { status: "timeout", latencyMs: null }), true, 3600);
+    status = applyPingSample(status, sampleAt(2, { status: "success", latencyMs: 10 }), false, 3600);
+    expect(status.stats.timeoutCount).toBe(2);
+    expect(status.stats.filteredTimeoutCount).toBe(2);
+    expect(status.stats.pendingTimeoutRun).toBe(0);
+  });
+});
+
+describe("trimSamplesWindow", () => {
+  const W = 60; // 秒
+
+  it("跨度未超 W+宽容度 不裁剪", () => {
+    const samples = Array.from({ length: 12 }, (_, i) => sampleAt(i));
+    const trimmed = trimSamplesWindow(samples, W);
+    expect(trimmed).toBe(samples);
+  });
+
+  it("跨度达到 W+宽容度 一次性裁回 W 以内", () => {
+    // 间隔 20s × 40 条 = 跨度 780s > 60+600=660s
+    const samples = Array.from({ length: 40 }, (_, i) => sampleAt(i * 4));
+    const trimmed = trimSamplesWindow(samples, W);
+    const span =
+      (Date.parse(trimmed[trimmed.length - 1].sentAt) - Date.parse(trimmed[0].sentAt)) / 1000;
+    expect(span).toBeLessThanOrEqual(W);
+    expect(trimmed.length).toBeLessThan(samples.length);
+  });
+
+  it("裁剪不影响计数器（全历史口径）", () => {
+    let status = createTargetStatus(makeTarget());
+    let samples: PingSample[] = [];
+    for (let i = 0; i < 40; i++) {
+      const sample = sampleAt(i * 4, i % 10 === 0 ? { status: "timeout" as const, latencyMs: null } : {});
+      samples = [...samples, sample];
+      status = applyPingSample(status, sample, false, W);
+    }
+    expect(status.samples.length).toBeLessThan(40);
+    expect(status.stats.totalCount).toBe(40);
+    expect(status.stats.timeoutCount).toBe(4);
   });
 });
 

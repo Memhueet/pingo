@@ -1,4 +1,4 @@
-import type { PingSample } from "../types";
+import type { FullStats, PingSample } from "../types";
 
 /**
  * 忽略单次超时：按 sentAt 顺序扫描，只保留属于"连续 ≥2 次超时"运行的超时样本，
@@ -61,5 +61,56 @@ export function calculateTargetStats(samples: PingSample[]): TargetStats {
     avgLatency,
     maxLatency,
     timeoutRate,
+  };
+}
+
+export function emptyFullStats(): FullStats {
+  return {
+    totalCount: 0,
+    successCount: 0,
+    latencySum: 0,
+    latencyMax: 0,
+    timeoutCount: 0,
+    filteredTimeoutCount: 0,
+    pendingTimeoutRun: 0,
+  };
+}
+
+/** 统计状态机推进一条样本（与 Rust models::apply_sample_to_stats 同语义） */
+export function applySampleToStats(stats: FullStats, sample: PingSample): FullStats {
+  const next = { ...stats };
+  next.totalCount += 1;
+  if (sample.status === "timeout") {
+    next.pendingTimeoutRun += 1;
+    next.timeoutCount += 1;
+  } else {
+    if (next.pendingTimeoutRun >= 2) {
+      next.filteredTimeoutCount += next.pendingTimeoutRun;
+    }
+    next.pendingTimeoutRun = 0;
+    if (sample.status === "success" && sample.latencyMs != null) {
+      next.successCount += 1;
+      next.latencySum += sample.latencyMs;
+      next.latencyMax = Math.max(next.latencyMax, sample.latencyMs);
+    }
+  }
+  return next;
+}
+
+/** 按显示口径派生视图统计；avg/max 与开关无关（超时样本本就不参与） */
+export function statsView(stats: FullStats, ignoreSingleTimeout: boolean) {
+  const timeoutCount = ignoreSingleTimeout
+    ? stats.filteredTimeoutCount
+    : stats.timeoutCount;
+  return {
+    avgLatency: stats.successCount > 0 ? stats.latencySum / stats.successCount : 0,
+    maxLatency: stats.successCount > 0 ? stats.latencyMax : 0,
+    timeoutCount,
+    totalCount: stats.totalCount,
+    successCount: stats.successCount,
+    timeoutRate:
+      stats.totalCount > 0
+        ? ((timeoutCount / stats.totalCount) * 100).toFixed(1)
+        : "0.0",
   };
 }

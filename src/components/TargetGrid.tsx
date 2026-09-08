@@ -18,6 +18,7 @@ interface TargetGridProps {
   hasActiveFile: boolean;
   aliasColor: string;
   addressColor: string;
+  ignoreSingleTimeout: boolean;
 }
 
 export function TargetGrid({
@@ -34,6 +35,7 @@ export function TargetGrid({
   hasActiveFile,
   aliasColor,
   addressColor,
+  ignoreSingleTimeout,
 }: TargetGridProps) {
   return (
     <div className="targetGrid">
@@ -52,6 +54,7 @@ export function TargetGrid({
             onContextMenu={(e) => onContextMenu(e, status.target.id)}
             aliasColor={aliasColor}
             addressColor={addressColor}
+            ignoreSingleTimeout={ignoreSingleTimeout}
           />
         ))
       )}

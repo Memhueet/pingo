@@ -2,7 +2,7 @@ import type { TargetStatus } from "../types";
 import type { Theme } from "../themes";
 import { LatencyChart } from "./LatencyChart";
 import { GlassCard } from "./GlassCard";
-import { calculateTargetStats, filterIsolatedTimeouts } from "../utils/stats";
+import { filterIsolatedTimeouts, statsView } from "../utils/stats";
 
 export function DetailPanel({
   status,
@@ -18,7 +18,11 @@ export function DetailPanel({
   const visibleSamples = ignoreSingleTimeout
     ? filterIsolatedTimeouts(status.samples)
     : status.samples;
-  const { avgLatency, maxLatency, timeoutCount } = calculateTargetStats(visibleSamples);
+  // 头部统计读全历史计数器；图表过滤仅影响样本窗口，不回写统计
+  const { avgLatency, maxLatency, timeoutCount } = statsView(
+    status.stats,
+    ignoreSingleTimeout,
+  );
 
   return (
     <GlassCard className="detailShell" cornerRadius={16}>

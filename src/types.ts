@@ -71,6 +71,8 @@ export interface TargetStatus {
   consecutiveTimeouts: number;
   alerting: boolean;
   samples: PingSample[];
+  /** 全历史统计计数器（Rust 基线 + 前端增量维护），与 samples 的显示窗口无关 */
+  stats: FullStats;
 }
 
 export interface BootstrapPayload {

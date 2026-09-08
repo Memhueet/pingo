@@ -1,7 +1,7 @@
 import type { TargetStatus } from "../types";
 import { GlassCard } from "./GlassCard";
 import { AlertCircle } from "lucide-react";
-import { calculateTargetStats } from "../utils/stats";
+import { statsView } from "../utils/stats";
 
 export function TargetCard({
   status,
@@ -11,6 +11,7 @@ export function TargetCard({
   onContextMenu,
   aliasColor,
   addressColor,
+  ignoreSingleTimeout,
 }: {
   status: TargetStatus;
   isSelected: boolean;
@@ -19,9 +20,10 @@ export function TargetCard({
   onContextMenu: (e: React.MouseEvent) => void;
   aliasColor: string;
   addressColor: string;
+  ignoreSingleTimeout: boolean;
 }) {
-  const { avgLatency, totalCount, timeoutCount, timeoutRate, successes } =
-    calculateTargetStats(status.samples);
+  const { avgLatency, totalCount, timeoutCount, timeoutRate, successCount } =
+    statsView(status.stats, ignoreSingleTimeout);
   const state = status.alerting ? "alert" : status.target.enabled ? "ok" : "off";
 
   return (
@@ -55,7 +57,7 @@ export function TargetCard({
           <span className="tcLatency">
             延迟{" "}
             <b>
-              {status.alerting || successes.length === 0
+              {status.alerting || successCount === 0
                 ? "—"
                 : `${avgLatency.toFixed(1)} ms`}
             </b>
