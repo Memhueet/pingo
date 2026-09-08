@@ -62,10 +62,14 @@ pub async fn bootstrap(state: State<'_, AppState>) -> CommandResult<BootstrapPay
     let storage = state.storage.lock().await;
     let settings = storage.get_settings().map_err(|e| AppError::Storage(e.to_string()))?;
     let targets = storage.list_targets().map_err(|e| AppError::Storage(e.to_string()))?;
+    let target_stats = storage
+        .target_stats()
+        .map_err(|e| AppError::Storage(e.to_string()))?;
     let ping_running = state.scheduler.ping_running.load(Ordering::Acquire);
     Ok(BootstrapPayload {
         settings,
         targets,
+        target_stats,
         ping_running,
     })
 }
@@ -220,7 +224,8 @@ pub async fn open_history_file(path: String) -> CommandResult<HistoryFilePayload
     let targets = storage
         .list_targets()
         .map_err(|_| AppError::DataFileOpen)?;
-    Ok(HistoryFilePayload { path, targets })
+    let target_stats = storage.target_stats().map_err(|e| AppError::Storage(e.to_string()))?;
+    Ok(HistoryFilePayload { path, targets, target_stats })
 }
 
 #[tauri::command]
@@ -275,6 +280,9 @@ pub async fn switch_data_file(
     let targets = new_storage
         .list_targets()
         .map_err(|e| AppError::Storage(e.to_string()))?;
+    let target_stats = new_storage
+        .target_stats()
+        .map_err(|e| AppError::Storage(e.to_string()))?;
 
     let mut storage_guard = state.storage.lock().await;
     *storage_guard = new_storage;
@@ -305,6 +313,7 @@ pub async fn switch_data_file(
     Ok(BootstrapPayload {
         settings,
         targets,
+        target_stats,
         ping_running: state.scheduler.ping_running.load(Ordering::Acquire),
     })
 }
@@ -340,6 +349,9 @@ pub async fn new_data_file(
     let targets = new_storage
         .list_targets()
         .map_err(|e| AppError::Storage(e.to_string()))?;
+    let target_stats = new_storage
+        .target_stats()
+        .map_err(|e| AppError::Storage(e.to_string()))?;
 
     let mut storage_guard = state.storage.lock().await;
     *storage_guard = new_storage;
@@ -354,6 +366,7 @@ pub async fn new_data_file(
     Ok(BootstrapPayload {
         settings,
         targets,
+        target_stats,
         ping_running: state.scheduler.ping_running.load(Ordering::Acquire),
     })
 }

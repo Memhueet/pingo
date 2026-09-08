@@ -47,6 +47,24 @@ export interface PingSample {
   errorKind: string | null;
 }
 
+/** 全历史统计计数器（Rust 聚合基线 + 前端增量维护） */
+export interface FullStats {
+  totalCount: number;
+  successCount: number;
+  latencySum: number;
+  latencyMax: number;
+  timeoutCount: number;
+  /** "忽略单次超时"口径：被非超时样本确认的连续 ≥2 超时 run 之和 */
+  filteredTimeoutCount: number;
+  /** 尾部未确认的超时 run 长度，随基线传递以延续状态机 */
+  pendingTimeoutRun: number;
+}
+
+export interface TargetStatsEntry {
+  targetId: string;
+  stats: FullStats;
+}
+
 export interface TargetStatus {
   target: Target;
   latestSample: PingSample | null;
@@ -58,12 +76,14 @@ export interface TargetStatus {
 export interface BootstrapPayload {
   settings: AppSettings;
   targets: Target[];
+  targetStats: TargetStatsEntry[];
   pingRunning: boolean;
 }
 
 export interface HistoryFilePayload {
   path: string;
   targets: Target[];
+  targetStats: TargetStatsEntry[];
 }
 
 export interface PingSampleEvent {

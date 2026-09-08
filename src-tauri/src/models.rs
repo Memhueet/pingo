@@ -96,11 +96,62 @@ pub struct PingSample {
     pub error_kind: Option<String>,
 }
 
+/// 全历史统计计数器；前端按相同语义增量维护（stats.ts applySampleToStats）
+#[derive(Debug, Clone, Copy, Default, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct FullStats {
+    pub total_count: u64,
+    pub success_count: u64,
+    pub latency_sum: f64,
+    pub latency_max: f64,
+    pub timeout_count: u64,
+    /// "忽略单次超时"口径：被非超时样本确认的连续 ≥2 超时 run 之和
+    pub filtered_timeout_count: u64,
+    /// 尾部未确认的超时 run 长度；随基线下发以延续状态机
+    pub pending_timeout_run: u64,
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct TargetStatsEntry {
+    pub target_id: Uuid,
+    pub stats: FullStats,
+}
+
+/// 统计状态机推进一条样本：timeout 进入 pending run；
+/// 非 timeout（成功或错误）时 run ≥2 整段计入 filtered；
+/// 尾部未确认的 run 不计入，由 pending_timeout_run 带到下一次推进
+pub fn apply_sample_to_stats(
+    stats: &mut FullStats,
+    status: &PingStatus,
+    latency_ms: Option<f64>,
+) {
+    stats.total_count += 1;
+    match status {
+        PingStatus::Timeout => {
+            stats.pending_timeout_run += 1;
+            stats.timeout_count += 1;
+        }
+        other => {
+            if stats.pending_timeout_run >= 2 {
+                stats.filtered_timeout_count += stats.pending_timeout_run;
+            }
+            stats.pending_timeout_run = 0;
+            if let (PingStatus::Success, Some(latency)) = (other, latency_ms) {
+                stats.success_count += 1;
+                stats.latency_sum += latency;
+                stats.latency_max = stats.latency_max.max(latency);
+            }
+        }
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct BootstrapPayload {
     pub settings: AppSettings,
     pub targets: Vec<Target>,
+    pub target_stats: Vec<TargetStatsEntry>,
     pub ping_running: bool,
 }
 
@@ -109,6 +160,7 @@ pub struct BootstrapPayload {
 pub struct HistoryFilePayload {
     pub path: String,
     pub targets: Vec<Target>,
+    pub target_stats: Vec<TargetStatsEntry>,
 }
 
 /// 接受 IPv4/IPv6 字面量；zone index（如 fe80::1%eth0）显式拒绝
@@ -204,6 +256,7 @@ mod tests {
         let payload = BootstrapPayload {
             settings: AppSettings::default(),
             targets: vec![],
+            target_stats: vec![],
             ping_running: false,
         };
         assert!(!payload.ping_running);

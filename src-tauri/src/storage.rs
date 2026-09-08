@@ -318,6 +318,47 @@ impl Storage {
         Ok(samples)
     }
 
+    /// 全历史统计聚合：单条 SQL 按 target_id、sent_at 排序流式扫描，
+    /// 逐行推进状态机，不积累样本行
+    pub fn target_stats(&self) -> SqlResult<Vec<TargetStatsEntry>> {
+        let mut stmt = self.conn.prepare(
+            "SELECT target_id, status, latency_ms
+             FROM ping_samples ORDER BY target_id ASC, sent_at ASC",
+        )?;
+        let mut rows = stmt.query([])?;
+        let mut out: Vec<TargetStatsEntry> = Vec::new();
+        let mut current: Option<(Uuid, FullStats)> = None;
+        while let Some(row) = rows.next()? {
+            let target_id_str: String = row.get(0)?;
+            let target_id = Uuid::parse_str(&target_id_str).unwrap_or_default();
+            match &mut current {
+                Some((id, stats)) if *id == target_id => {
+                    let status: PingStatus =
+                        serde_json::from_str(&row.get::<_, String>(1)?)
+                            .unwrap_or(PingStatus::Error);
+                    let latency: Option<f64> = row.get(2)?;
+                    apply_sample_to_stats(stats, &status, latency);
+                }
+                _ => {
+                    if let Some((id, stats)) = current.take() {
+                        out.push(TargetStatsEntry { target_id: id, stats });
+                    }
+                    let mut stats = FullStats::default();
+                    let status: PingStatus =
+                        serde_json::from_str(&row.get::<_, String>(1)?)
+                            .unwrap_or(PingStatus::Error);
+                    let latency: Option<f64> = row.get(2)?;
+                    apply_sample_to_stats(&mut stats, &status, latency);
+                    current = Some((target_id, stats));
+                }
+            }
+        }
+        if let Some((id, stats)) = current.take() {
+            out.push(TargetStatsEntry { target_id: id, stats });
+        }
+        Ok(out)
+    }
+
     pub fn cleanup_retention(&self, days: i64) -> SqlResult<usize> {
         let cutoff = (Utc::now() - chrono::Duration::days(days)).to_rfc3339();
         let deleted = self
@@ -575,5 +616,77 @@ mod tests {
 
         let remaining = storage.samples_for_target(target.id, None, None).unwrap();
         assert_eq!(remaining.len(), 1);
+    }
+
+    #[test]
+    fn target_stats_aggregates_full_history() {
+        let harness = TestHarness::new();
+        let target_a = uuid::Uuid::new_v4();
+        let target_b = uuid::Uuid::new_v4();
+        let base = chrono::Utc::now() - chrono::Duration::hours(1);
+
+        let make = |offset_secs: i64, target: uuid::Uuid, status: crate::models::PingStatus, latency: Option<f64>| crate::models::PingSample {
+            id: uuid::Uuid::new_v4(),
+            target_id: target,
+            sent_at: base + chrono::Duration::seconds(offset_secs),
+            status,
+            latency_ms: latency,
+            error_kind: None,
+        };
+        use crate::models::PingStatus;
+
+        // ping_samples.target_id 外键引用 targets，先落目标父行
+        for target_id in [target_a, target_b] {
+            harness
+                .storage
+                .save_target(&Target {
+                    id: target_id,
+                    address: "127.0.0.1".to_string(),
+                    alias: String::new(),
+                    enabled: true,
+                    created_at: base,
+                    updated_at: base,
+                })
+                .unwrap();
+        }
+
+        // 目标 A：成功(10) 超时 成功(30) 错误 超时 超时 超时(尾部待确认)
+        // 语义推演：位置2的超时被成功中断，run=1 不计入；
+        // 末尾 run=3 未被非超时确认，不计入 filtered，以 pending=3 带出
+        let samples_a = vec![
+            make(0, target_a, PingStatus::Success, Some(10.0)),
+            make(5, target_a, PingStatus::Timeout, None),
+            make(10, target_a, PingStatus::Success, Some(30.0)),
+            make(15, target_a, PingStatus::Error, None),
+            make(20, target_a, PingStatus::Timeout, None),
+            make(25, target_a, PingStatus::Timeout, None),
+            make(30, target_a, PingStatus::Timeout, None),
+        ];
+        // 目标 B：成功(5)
+        let samples_b = vec![make(0, target_b, PingStatus::Success, Some(5.0))];
+        for sample in samples_a.iter().chain(samples_b.iter()) {
+            harness.storage.insert_sample(sample).unwrap();
+        }
+
+        let mut entries = harness.storage.target_stats().unwrap();
+        entries.sort_by_key(|e| e.target_id);
+        assert_eq!(entries.len(), 2);
+
+        let a = entries.iter().find(|e| e.target_id == target_a).unwrap().stats;
+        assert_eq!(a.total_count, 7);
+        assert_eq!(a.success_count, 2);
+        assert_eq!(a.latency_sum, 40.0);
+        assert_eq!(a.latency_max, 30.0);
+        assert_eq!(a.timeout_count, 4);
+        assert_eq!(a.filtered_timeout_count, 0);
+        assert_eq!(a.pending_timeout_run, 3);
+
+        let b = entries.iter().find(|e| e.target_id == target_b).unwrap().stats;
+        assert_eq!(b.total_count, 1);
+        assert_eq!(b.success_count, 1);
+        assert_eq!(b.latency_sum, 5.0);
+        assert_eq!(b.timeout_count, 0);
+        assert_eq!(b.filtered_timeout_count, 0);
+        assert_eq!(b.pending_timeout_run, 0);
     }
 }
