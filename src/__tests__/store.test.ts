@@ -31,6 +31,7 @@ function makeSettings(overrides?: Partial<AppSettings>): AppSettings {
     addressColor: "",
     themeId: "pure-white",
     ignoreSingleTimeout: false,
+    chartWindowSeconds: 3600,
     backoffIntervals: [...defaultBackoffIntervals],
     ...overrides,
   };

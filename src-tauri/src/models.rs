@@ -12,6 +12,9 @@ pub struct AppSettings {
     pub alias_color: String,
     pub address_color: String,
     pub theme_id: String,
+    /// 实时图表显示的时间窗口（秒）
+    #[serde(default = "default_chart_window_seconds")]
+    pub chart_window_seconds: u64,
     /// 连续失败 6 次后逐档采用的退避间隔（秒），最后一档封顶
     #[serde(default = "default_backoff_intervals")]
     pub backoff_intervals: Vec<u64>,
@@ -19,6 +22,10 @@ pub struct AppSettings {
 
 pub fn default_backoff_intervals() -> Vec<u64> {
     vec![10, 60, 180, 600, 1800, 3600]
+}
+
+pub fn default_chart_window_seconds() -> u64 {
+    3600
 }
 
 /// 解析逗号分隔的退避阶梯；跳过无法解析的项，不足 6 档用默认值补齐，超出 6 档截断
@@ -46,6 +53,7 @@ impl Default for AppSettings {
             alias_color: String::new(),
             address_color: String::new(),
             theme_id: "pure-white".to_string(),
+            chart_window_seconds: default_chart_window_seconds(),
             backoff_intervals: default_backoff_intervals(),
         }
     }

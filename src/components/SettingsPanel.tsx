@@ -6,6 +6,12 @@ import { X, Save, Sun, Moon, Cloud, Sliders, Palette, Info } from "lucide-react"
 import { getVersion } from "@tauri-apps/api/app";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { themes } from "../themes";
+import {
+  clampChartWindowSeconds,
+  secondsToValueUnit,
+  valueUnitToSeconds,
+  type DurationUnit,
+} from "../utils/duration";
 
 function formatDuration(seconds: number): string {
   if (!Number.isFinite(seconds) || seconds <= 0) return "—";
@@ -17,6 +23,14 @@ function formatDuration(seconds: number): string {
   const hours = seconds / 3600;
   return `${Number.isInteger(hours) ? hours : hours.toFixed(1)} 小时`;
 }
+
+/** 图表实时窗口预设档位（秒） */
+const CHART_WINDOW_PRESETS = [
+  { value: 600, label: "10 分钟" },
+  { value: 3600, label: "1 小时" },
+  { value: 21600, label: "6 小时" },
+  { value: 86400, label: "24 小时" },
+];
 
 interface SettingsPanelProps {
   settings: AppSettings;
@@ -52,6 +66,9 @@ export function SettingsPanel({ settings, sortMode, onClose, onSave, onSortModeC
   const [draft, setDraft] = useState({ ...settings });
   const [activeTab, setActiveTab] = useState<TabType>("general");
   const [appVersion, setAppVersion] = useState("");
+  const [customWindow, setCustomWindow] = useState(() =>
+    secondsToValueUnit(settings.chartWindowSeconds),
+  );
 
   useEffect(() => {
     getVersion().then(setAppVersion).catch(() => setAppVersion(""));
@@ -191,7 +208,95 @@ export function SettingsPanel({ settings, sortMode, onClose, onSave, onSortModeC
                     <span>次</span>
                   </span>
                 </label>
+                <label>
+                  图表实时窗口
+                  <select
+                    value={
+                      CHART_WINDOW_PRESETS.some(
+                        (p) => p.value === draft.chartWindowSeconds,
+                      )
+                        ? String(draft.chartWindowSeconds)
+                        : "custom"
+                    }
+                    onChange={(event) => {
+                      if (event.target.value === "custom") {
+                        setCustomWindow(
+                          secondsToValueUnit(draft.chartWindowSeconds),
+                        );
+                        setDraft({
+                          ...draft,
+                          chartWindowSeconds: clampChartWindowSeconds(
+                            draft.chartWindowSeconds,
+                          ),
+                        });
+                      } else {
+                        setDraft({
+                          ...draft,
+                          chartWindowSeconds: Number(event.target.value),
+                        });
+                      }
+                    }}
+                    className="sortSelect"
+                  >
+                    {CHART_WINDOW_PRESETS.map((preset) => (
+                      <option key={preset.value} value={preset.value}>
+                        {preset.label}
+                      </option>
+                    ))}
+                    <option value="custom">自定义</option>
+                  </select>
+                </label>
               </div>
+              {CHART_WINDOW_PRESETS.some(
+                (p) => p.value === draft.chartWindowSeconds,
+              ) ? null : (
+                <div className="settingsField">
+                  <div className="backoffStepInput">
+                    <input
+                      type="number"
+                      min={1}
+                      value={customWindow.value}
+                      aria-label="自定义图表窗口时长"
+                      onChange={(event) => {
+                        const next = {
+                          ...customWindow,
+                          value:
+                            event.target.value === ""
+                              ? 0
+                              : Number(event.target.value),
+                        };
+                        setCustomWindow(next);
+                        setDraft({
+                          ...draft,
+                          chartWindowSeconds: valueUnitToSeconds(next),
+                        });
+                      }}
+                    />
+                    <select
+                      value={customWindow.unit}
+                      aria-label="自定义图表窗口单位"
+                      onChange={(event) => {
+                        const next = {
+                          ...customWindow,
+                          unit: event.target.value as DurationUnit,
+                        };
+                        setCustomWindow(next);
+                        setDraft({
+                          ...draft,
+                          chartWindowSeconds: valueUnitToSeconds(next),
+                        });
+                      }}
+                    >
+                      <option value="minute">分钟</option>
+                      <option value="hour">小时</option>
+                      <option value="day">天</option>
+                    </select>
+                  </div>
+                  <p className="fieldHint">
+                    范围 1 分钟 – 30 天。实时图表显示的时间范围；范围越大数据点越多，绘制开销越高
+                  </p>
+                </div>
+              )}
               <div className="settingsField settingsSection">
                 <div className="settingsFieldHeader">
                   <span>失败退避间隔</span>

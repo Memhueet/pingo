@@ -108,6 +108,9 @@ impl Storage {
                 }
             },
             theme_id: get_str(&self.conn, "theme_id", "pure-white").to_string(),
+            chart_window_seconds: get_str(&self.conn, "chart_window_seconds", "3600")
+                .parse()
+                .unwrap_or(3600),
             backoff_intervals: parse_backoff_intervals(&get_str(
                 &self.conn,
                 "backoff_intervals",
@@ -134,6 +137,10 @@ impl Storage {
             ("alias_color", &settings.alias_color),
             ("address_color", &settings.address_color),
             ("theme_id", &settings.theme_id),
+            (
+                "chart_window_seconds",
+                &settings.chart_window_seconds.to_string(),
+            ),
             (
                 "backoff_intervals",
                 &settings
@@ -460,6 +467,21 @@ mod tests {
             loaded.backoff_intervals,
             vec![15, 90, 300, 900, 2700, 7200]
         );
+    }
+
+    #[test]
+    fn chart_window_seconds_roundtrip_and_default() {
+        let harness = TestHarness::new();
+
+        // 旧数据文件缺键时回退默认 3600
+        let settings = harness.storage.get_settings().unwrap();
+        assert_eq!(settings.chart_window_seconds, 3600);
+
+        // 保存读取回环
+        let mut settings = settings;
+        settings.chart_window_seconds = 600;
+        harness.storage.save_settings(&settings).unwrap();
+        assert_eq!(harness.storage.get_settings().unwrap().chart_window_seconds, 600);
     }
 
     #[test]

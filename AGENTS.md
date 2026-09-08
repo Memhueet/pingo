@@ -44,7 +44,7 @@ npm run tauri build                              # 生产构建（桌面安装�
 
 设置分两层，勿混淆：
 
-- **功能设置**（间隔/超时/保留天数/告警阈值/退避阶梯/排序）随数据文件存 SQLite `settings` 表。
+- **功能设置**（间隔/超时/保留天数/告警阈值/退避阶梯/排序/图表实时窗口）随数据文件存 SQLite `settings` 表。
 - **外观配置**（`themeId`、`aliasColor`、`addressColor`、"忽略单次超时"视图开关 `ignoreSingleTimeout`）是**应用级配置**，存 WebView localStorage；数据文件里虽有一份旧值，但加载时一律被 `normalizeSettings` 用应用级值覆盖。保存设置时必须调用 `saveAppearance` 同步。开始页在打开数据文件前依赖该存储呈现上次主题，勿把外观改回仅随数据文件。
 - 主题切换的 effect 除写 `--theme-*` 变量外，还调用 `getCurrentWindow().setTheme()` 同步系统标题栏深浅色，并经 `applyWindowTheme` 把主题表面/文字色写入 Windows 11 标题栏（DWM，Windows 10 与其他平台空实现）；`LatencyChart` 接收 `theme` prop 并以 `theme.id` 为 key 重挂载。
 

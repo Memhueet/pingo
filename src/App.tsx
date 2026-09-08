@@ -46,6 +46,7 @@ const defaultSettings: AppSettings = {
   addressColor: savedAppearance.addressColor ?? "",
   themeId: savedAppearance.themeId ?? "pure-white",
   ignoreSingleTimeout: savedAppearance.ignoreSingleTimeout ?? false,
+  chartWindowSeconds: 3600,
   backoffIntervals: [...defaultBackoffIntervals],
 };
 

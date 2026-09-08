@@ -8,6 +8,8 @@ export interface AppSettings {
   themeId: string;
   /** 图表视图偏好：忽略单次超时，仅连续 ≥2 次的超时计入图表与统计（应用级配置） */
   ignoreSingleTimeout: boolean;
+  /** 实时图表显示的时间窗口（秒），默认 1 小时 */
+  chartWindowSeconds: number;
   /** 连续失败 6 次后逐档采用的退避间隔（秒），最后一档封顶 */
   backoffIntervals: number[];
 }
