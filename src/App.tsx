@@ -25,8 +25,8 @@ import { TargetEditor } from "./components/TargetEditor";
 import { TargetGrid } from "./components/TargetGrid";
 import { Toolbar } from "./components/Toolbar";
 import { EventLog } from "./components/EventLog";
-import { applyPingSample, createTargetStatus, loadAppearance, normalizeSettings, saveAppearance } from "./state/usePingoStore";
-import { statsView } from "./utils/stats";
+import { applyPingSample, CHART_WINDOW_HYSTERESIS_SECONDS, createTargetStatus, loadAppearance, normalizeSettings, saveAppearance, trimSamplesWindow } from "./state/usePingoStore";
+import { emptyFullStats, statsView } from "./utils/stats";
 import type { AppSettings, Target, TargetSaveData, TargetStatus } from "./types";
 import { defaultBackoffIntervals } from "./types";
 import { isValidAddress } from "./validation";
@@ -207,17 +207,22 @@ export default function App() {
   useEffect(() => {
     if (!selectedTargetId) return;
     let cancelled = false;
-    loadSamples(selectedTargetId)
+    const windowSeconds = chartWindowSecondsRef.current;
+    const from = new Date(
+      Date.now() - (windowSeconds + CHART_WINDOW_HYSTERESIS_SECONDS) * 1000,
+    ).toISOString();
+    loadSamples(selectedTargetId, from)
       .then((loaded) => {
         if (cancelled) return;
         setTargets((current) =>
           current.map((status) => {
             if (status.target.id !== selectedTargetId) return status;
             const loadedIds = new Set(loaded.map((s) => s.id));
-            const localOnly = status.samples.filter(
-              (s) => !loadedIds.has(s.id),
+            const localOnly = status.samples.filter((s) => !loadedIds.has(s.id));
+            const merged = trimSamplesWindow(
+              [...loaded, ...localOnly],
+              windowSeconds,
             );
-            const merged = [...loaded, ...localOnly];
             return {
               ...status,
               samples: merged,
@@ -234,7 +239,7 @@ export default function App() {
     return () => {
       cancelled = true;
     };
-  }, [selectedTargetId, dataFilePath]);
+  }, [selectedTargetId, dataFilePath, settings.chartWindowSeconds]);
 
   const theme = useMemo(() => getThemeById(settings.themeId), [settings.themeId]);
   const effectiveAliasColor = settings.aliasColor || theme.textSecondary;
@@ -462,7 +467,14 @@ export default function App() {
       const fileName = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}-${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}${String(now.getSeconds()).padStart(2, '0')}-pingo-history.db`;
       const filePath = `${dirPath}/${fileName}`;
       const payload = await newDataFile(filePath);
-      setTargets(payload.targets.map((t) => createTargetStatus(t)));
+      setTargets(
+        payload.targets.map((t) =>
+          createTargetStatus(
+            t,
+            payload.targetStats.find((e) => e.targetId === t.id)?.stats,
+          ),
+        ),
+      );
       setSettings(normalizeSettings(payload.settings));
       setPingRunning(payload.pingRunning);
       setSelectedTargetId(null);
@@ -486,7 +498,12 @@ export default function App() {
         return;
       }
       const payload = await switchDataFile(path);
-      const initialTargets = payload.targets.map((t) => createTargetStatus(t));
+      const initialTargets = payload.targets.map((t) =>
+        createTargetStatus(
+          t,
+          payload.targetStats.find((e) => e.targetId === t.id)?.stats,
+        ),
+      );
       setTargets(initialTargets);
       setSettings(normalizeSettings(payload.settings));
       setPingRunning(payload.pingRunning);
@@ -497,24 +514,6 @@ export default function App() {
       setHasActiveFile(true);
       setLogEntries([]);
       addLog("已打开监测数据文件", "info");
-
-      for (const target of payload.targets) {
-        try {
-          const samples = await loadSamples(target.id);
-          setTargets((current) =>
-            current.map((status) => {
-              if (status.target.id !== target.id) return status;
-              return {
-                ...status,
-                samples,
-                latestSample: samples[samples.length - 1] ?? null,
-              };
-            }),
-          );
-        } catch (e) {
-          console.error(`Failed to load samples for ${target.address}:`, e);
-        }
-      }
     } catch (e) {
       setAppError((e as any)?.message ?? String(e));
     }
@@ -543,7 +542,12 @@ export default function App() {
     try {
       await clearHistory();
       setTargets((current) =>
-        current.map((s) => ({ ...s, samples: [], latestSample: null })),
+        current.map((s) => ({
+          ...s,
+          samples: [],
+          latestSample: null,
+          stats: emptyFullStats(),
+        })),
       );
       addLog("已清空所有历史数据", "info");
     } catch (e) {
