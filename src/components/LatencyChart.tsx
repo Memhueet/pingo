@@ -4,24 +4,77 @@ import "uplot/dist/uPlot.min.css";
 import type { PingSample } from "../types";
 import type { Theme } from "../themes";
 
+/** 图表持有的数据缓冲：与 uPlot 三列数组同引用，纯追加时原地 push */
+export interface ChartBuffer {
+  targetId: string;
+  pingTimeoutMs: number;
+  xs: number[];
+  success: (number | null)[];
+  timeout: (number | null)[];
+  ids: string[];
+}
+
+function pushSample(buffer: ChartBuffer, sample: PingSample, pingTimeoutMs: number) {
+  buffer.xs.push(new Date(sample.sentAt).getTime() / 1000);
+  buffer.success.push(sample.status === "success" ? (sample.latencyMs ?? 0) : null);
+  buffer.timeout.push(sample.status === "timeout" ? pingTimeoutMs : null);
+  buffer.ids.push(sample.id);
+}
+
+export function buildBuffer(
+  targetId: string,
+  samples: PingSample[],
+  pingTimeoutMs: number,
+): ChartBuffer {
+  const buffer: ChartBuffer = {
+    targetId,
+    pingTimeoutMs,
+    xs: [],
+    success: [],
+    timeout: [],
+    ids: [],
+  };
+  for (const sample of samples) pushSample(buffer, sample, pingTimeoutMs);
+  return buffer;
+}
+
+/** 纯追加判定：目标/超时参数未变，且新数组是持有数组的纯超集（首、持有尾 id 同下标相等且长度严格增长） */
+export function isPureAppend(
+  buffer: ChartBuffer,
+  targetId: string,
+  pingTimeoutMs: number,
+  samples: PingSample[],
+): boolean {
+  return (
+    buffer.targetId === targetId &&
+    buffer.pingTimeoutMs === pingTimeoutMs &&
+    samples.length > buffer.ids.length &&
+    samples[0]?.id === buffer.ids[0] &&
+    samples[buffer.ids.length - 1]?.id === buffer.ids[buffer.ids.length - 1]
+  );
+}
+
 export function LatencyChart({
+  targetId,
   samples,
   pingTimeoutMs,
   theme,
 }: {
+  targetId: string;
   samples: PingSample[];
   pingTimeoutMs: number;
   theme: Theme;
 }) {
   const hostRef = useRef<HTMLDivElement | null>(null);
   const chartRef = useRef<uPlot | null>(null);
+  const bufferRef = useRef<ChartBuffer | null>(null);
   const [chartSize, setChartSize] = useState({ width: 720, height: 300 });
 
   useEffect(() => {
     if (!hostRef.current) return;
     const parent = hostRef.current.parentElement;
     if (!parent) return;
-    
+
     const updateSize = () => {
       const availableHeight = parent.clientHeight || 300;
       setChartSize({
@@ -42,18 +95,21 @@ export function LatencyChart({
         chartRef.current.destroy();
         chartRef.current = null;
       }
+      bufferRef.current = null;
       return;
     }
 
-    const timestamps = samples.map((sample) => new Date(sample.sentAt).getTime() / 1000);
-    const successValues: (number | null)[] = samples.map((sample) =>
-      sample.status === "success" ? (sample.latencyMs ?? 0) : null,
-    );
-    const timeoutValues: (number | null)[] = samples.map((sample) =>
-      sample.status === "timeout" ? pingTimeoutMs : null,
-    );
-
-    const data: uPlot.AlignedData = [timestamps, successValues, timeoutValues];
+    let buffer = bufferRef.current;
+    if (buffer && isPureAppend(buffer, targetId, pingTimeoutMs, samples)) {
+      for (const sample of samples.slice(buffer.ids.length)) {
+        pushSample(buffer, sample, pingTimeoutMs);
+      }
+    } else {
+      // 批量裁剪 / 目标切换 / 窗口变更 / 合并加载：整体重建
+      buffer = buildBuffer(targetId, samples, pingTimeoutMs);
+      bufferRef.current = buffer;
+    }
+    const data: uPlot.AlignedData = [buffer.xs, buffer.success, buffer.timeout];
 
     if (!chartRef.current) {
       const axisColor = theme.chartAxis;
@@ -108,7 +164,7 @@ export function LatencyChart({
       chartRef.current.setData(data);
       chartRef.current.setSize({ width: chartSize.width, height: chartSize.height });
     }
-  }, [samples, pingTimeoutMs, chartSize]);
+  }, [samples, pingTimeoutMs, targetId, chartSize, theme]);
 
   useEffect(() => {
     return () => {

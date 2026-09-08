@@ -41,6 +41,7 @@ export function DetailPanel({
         {/* key 随主题变化强制重建 uPlot 实例，让系列色/坐标轴即时跟随主题 */}
         <LatencyChart
           key={theme.id}
+          targetId={status.target.id}
           samples={visibleSamples}
           pingTimeoutMs={pingTimeoutSecs * 1000}
           theme={theme}

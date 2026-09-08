@@ -1,6 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { DetailPanel } from "../components/DetailPanel";
+import { buildBuffer, isPureAppend } from "../components/LatencyChart";
 import { getThemeById } from "../themes";
 import { applySampleToStats, emptyFullStats } from "../utils/stats";
 import type { PingSample, TargetStatus } from "../types";
@@ -110,5 +111,40 @@ describe("DetailPanel", () => {
     // 孤立的超时样本被过滤：不计入超时数，也不影响平均/最大延迟
     expect(screen.getByText("Timeouts 0")).toBeTruthy();
     expect(screen.getByText("Average 10.0 ms")).toBeTruthy();
+  });
+});
+
+describe("LatencyChart 缓冲", () => {
+  const T0 = Date.parse("2026-09-08T00:00:00Z");
+  function sample(id: string, index: number, status: PingSample["status"] = "success"): PingSample {
+    return {
+      id,
+      targetId: "t1",
+      sentAt: new Date(T0 + index * 5000).toISOString(),
+      status,
+      latencyMs: status === "success" ? 10 : null,
+      errorKind: null,
+    };
+  }
+
+  it("buildBuffer 映射成功/超时/错误三列", () => {
+    const buffer = buildBuffer(
+      "t1",
+      [sample("a", 0), sample("b", 1, "timeout"), sample("c", 2, "error")],
+      5000,
+    );
+    expect(buffer.ids).toEqual(["a", "b", "c"]);
+    expect(buffer.success).toEqual([10, null, null]);
+    expect(buffer.timeout).toEqual([null, 5000, null]);
+    expect(buffer.xs[1] - buffer.xs[0]).toBe(5);
+  });
+
+  it("isPureAppend：纯追加为真，头删/目标切换/超时参数变化/等长为假", () => {
+    const buffer = buildBuffer("t1", [sample("a", 0), sample("b", 1)], 5000);
+    expect(isPureAppend(buffer, "t1", 5000, [sample("a", 0), sample("b", 1), sample("c", 2)])).toBe(true);
+    expect(isPureAppend(buffer, "t1", 5000, [sample("b", 1), sample("c", 2), sample("d", 3)])).toBe(false);
+    expect(isPureAppend(buffer, "t2", 5000, [sample("a", 0), sample("b", 1), sample("c", 2)])).toBe(false);
+    expect(isPureAppend(buffer, "t1", 9000, [sample("a", 0), sample("b", 1), sample("c", 2)])).toBe(false);
+    expect(isPureAppend(buffer, "t1", 5000, [sample("a", 0), sample("x", 1)])).toBe(false);
   });
 });
