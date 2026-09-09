@@ -8,7 +8,7 @@
 
 ## 设计原则：新拟态（Neumorphism / Soft UI）
 
-1. **分层单色表面**：三层不透明表面同色相、按明度分层——顶栏/左右面板 `--theme-panelBackground` 比画布 `--theme-background` 深一档（后退的"框架"），卡片/按钮 `--theme-cardBackground` 比画布亮一档（浮起的"内容"）；不使用半透明表面。分层约束：`shadowLight` 必须亮于 `cardBackground`、`shadowDark` 必须深于 `panelBackground`。
+1. **浮动工作台 + 分层单色表面**：布局参照 VS Code 新版工作台——窗体底色 `--theme-panelBackground`（最深层）自 `--seam`（6px）细缝中露出，顶栏与三块工作台面板为圆角浮动面（填充 `--theme-background`，明度居中，面板层不投影），详情壳/卡片/按钮等内容面 `--theme-cardBackground` 最亮；不使用半透明表面与硬边框分隔。分层约束：`shadowLight` 必须亮于 `cardBackground`、`shadowDark` 必须深于 `panelBackground`。
 2. **光影塑形**：立体感仅由双向阴影塑造——左上高光 `--theme-shadowLight` + 右下暗影 `--theme-shadowDark`：
    - 凸起（raised）：静止的卡片、按钮、弹窗，使用 `--shadow-raised-sm / -raised / -raised-lg`；
    - 凹陷（inset）：输入井、按下态，使用 `--shadow-inset / -inset-sm`。
@@ -30,6 +30,7 @@
 | `--radius-xl` | `16px` | 模态框、详情面板 |
 | `--radius-2xl` | `22px` | 欢迎卡片 |
 | `--spacing-xs` … `--spacing-2xl` | `4 / 8 / 12 / 16 / 24 / 32px` | 间距阶梯 |
+| `--seam` | `6px` | 工作台面板缝：窗体底色在顶栏/面板之间露出的均匀间隔 |
 | `--font-family` | Inter, system-ui | 全局字体 |
 | `--font-size-xs` … `--font-size-4xl` | `10 / 12 / 13 / 14 / 16 / 18 / 22 / 36px` | 字号阶梯 |
 | `--font-weight-normal / medium / semibold` | `400 / 500 / 600` | 字重 |
@@ -79,9 +80,9 @@ interface Theme {
   name: string;
   category: "light" | "neutral" | "dark";
   background: string;
-  /** 框架表面：顶栏与左右面板，比画布深一档 */
+  /** 缝隙基座：窗体底色，自面板间细缝露出，三层中最深 */
   panelBackground: string;
-  /** 内容表面：卡片、按钮等浮起元素，比画布亮一档 */
+  /** 内容表面：详情壳、卡片、按钮等浮起元素，三层中最亮 */
   cardBackground: string;
   text: string;
   textSecondary: string;
@@ -153,16 +154,17 @@ interface Theme {
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│        Toolbar（文件菜单 · 全局统计 · 开始/停止 · 面板切换）      │
-├─────────────┬─────────────────────────┬─────────────────────┤
-│             │                         │                     │
-│  TargetGrid │      DetailPanel        │    EventLog         │
-│  (目标网格)  │      (详情面板)          │    (消息动态)        │
-│             │                         │                     │
-│  + 浮动按钮  │   + LatencyChart        │                     │
-│             │   + 统计信息             │                     │
-└─────────────┴─────────────────────────┴─────────────────────┘
+│ ╭─────────────────────────────────────────────────────────╮ │
+│ │  Toolbar（文件菜单 · 全局统计 · 开始/停止 · 面板切换）      │ │
+│ ╰─────────────────────────────────────────────────────────╯ │
+│ ╭───────────╮ ╭───────────────────────╮ ╭─────────────────╮ │
+│ │ TargetGrid│ │ DetailPanel（内容面）  │ │ EventLog        │ │
+│ │ (目标网格) │ │ 统计信息 + LatencyChart│ │ (消息动态)      │ │
+│ ╰───────────╯ ╰───────────────────────╯ ╰─────────────────╯ │
+└─────────────────────────────────────────────────────────────┘
 ```
+
+VS Code 式浮动工作台：窗体底色（缝隙基座）自 6px 细缝中露出，顶栏与三块面板均为圆角浮动面；面板间不放硬分隔线，拖拽手柄本身即缝隙（hover 变强调色）。顶栏与侧栏面板为同一表面色，详情壳为更亮一档的内容面。
 
 未打开数据文件时显示欢迎页（选择新建工作空间或打开数据文件）。
 

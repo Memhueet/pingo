@@ -2,11 +2,11 @@ export interface Theme {
   id: string;
   name: string;
   category: "light" | "neutral" | "dark";
-  /** 画布基准色：详情区主表面 */
+  /** 面板表面：顶栏与三块工作台面板的填充，明度居中 */
   background: string;
-  /** 框架表面：顶栏与左右面板，比画布深一档（后退的"框架"） */
+  /** 缝隙基座：窗体底色，自面板间细缝露出，三层中最深 */
   panelBackground: string;
-  /** 内容表面：卡片、按钮等浮起元素，比画布亮一档 */
+  /** 内容表面：详情壳、卡片、按钮等浮起元素，三层中最亮 */
   cardBackground: string;
   text: string;
   textSecondary: string;
@@ -32,10 +32,11 @@ export interface Theme {
 }
 
 /**
- * 新拟态（Neumorphism）主题：三层不透明表面同色相、按明度分层——
- * panelBackground（顶栏/左右面板）比 background（画布）深一档，
- * cardBackground（卡片/按钮）比画布亮一档，
- * 立体感由 shadowLight / shadowDark 双向柔和阴影进一步塑造，
+ * 新拟态（Neumorphism）主题：VS Code 式浮动工作台 + 三层同色相不透明
+ * 表面按明度分层——panelBackground 为窗体缝隙底色（最深层），
+ * background 为顶栏与工作台面板填充（居中），cardBackground 为
+ * 详情壳/卡片/按钮等内容面（最亮）；面板间以细缝分隔、面板层不投影，
+ * 元素层立体感由 shadowLight / shadowDark 双向柔和阴影塑造，
  * 禁止半透明表面与背景模糊。
  * 分层约束：shadowLight 必须亮于 cardBackground、shadowDark 必须深于 panelBackground；
  * 正文/次要文字对三层表面的对比度 ≥ 4.5:1（鲜草绿为中性参照主题，按其参照基准放宽）。

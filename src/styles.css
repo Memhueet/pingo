@@ -1,9 +1,10 @@
 /*
  * Pingo — 新拟态（Neumorphism / Soft UI）样式
- * 规则：三层同色相不透明表面按明度分层——面板/顶栏（panelBackground）
- * 比画布（background）深一档，卡片/按钮（cardBackground）比画布亮一档；
- * 立体感再由 shadowLight（左上高光）+ shadowDark（右下暗影）双向阴影塑造。
- * 凸起 = raised，按下/选中/输入井 = inset（凹陷）。
+ * 规则：VS Code 式浮动工作台 + 三层同色相不透明表面按明度分层——
+ * 窗体缝隙底色（panelBackground）最深，顶栏/三块工作台面板（background）居中，
+ * 详情壳/卡片/按钮等内容面（cardBackground）最亮；面板间以 --seam 细缝分隔，
+ * 面板层不投影。元素层立体感由 shadowLight（左上高光）+ shadowDark（右下暗影）
+ * 双向阴影塑造：凸起 = raised，按下/选中/输入井 = inset（凹陷）。
  * 禁止半透明表面、背景模糊与硬边框。
  */
 :root {
@@ -18,6 +19,8 @@
   --spacing-lg: 16px;
   --spacing-xl: 24px;
   --spacing-2xl: 32px;
+  /* 工作台面板缝：顶栏/面板与窗体底色之间的均匀间隔（VS Code 式） */
+  --seam: 6px;
   --font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --font-size-xs: 10px;
   --font-size-sm: 12px;
@@ -61,7 +64,7 @@
   --accent-ring: color-mix(in srgb, var(--theme-accent) 55%, transparent);
 
   color: var(--theme-text);
-  background: var(--theme-background);
+  background: var(--theme-panelBackground);
   font-family: var(--font-family);
 }
 
@@ -87,19 +90,27 @@ button:focus-visible {
   }
 }
 
+/* VS Code 式浮动工作台：窗体底色即缝隙色（panelBackground，最深层），
+ * 顶栏与三块面板为圆角浮动面（background），内容面（cardBackground）最亮。
+ * 面板层不投影，层次由缝与色阶分离；元素层立体感仍由双向阴影塑造。 */
 .appShell {
   height: 100vh;
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  background: var(--theme-panelBackground);
+  padding: var(--seam);
+  gap: var(--seam);
 }
 
 .welcomeScreen {
   flex: 1;
+  min-height: 0;
   display: flex;
   align-items: center;
   justify-content: center;
   background: var(--theme-background);
+  border-radius: var(--radius-lg);
 }
 
 .welcomeCard {
@@ -172,8 +183,8 @@ button:focus-visible {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   align-items: center;
-  background: var(--theme-panelBackground);
-  box-shadow: 0 4px 14px var(--theme-shadowDark);
+  background: var(--theme-background);
+  border-radius: var(--radius-lg);
   flex-shrink: 0;
   position: relative;
   z-index: var(--z-index-panel);
@@ -213,7 +224,7 @@ button:focus-visible {
   padding: var(--spacing-xl);
   border-radius: var(--radius-lg);
   color: var(--theme-textSecondary);
-  background: var(--theme-background);
+  background: var(--theme-panelBackground);
   box-shadow: var(--shadow-inset);
   text-align: center;
 }
@@ -239,7 +250,7 @@ button:focus-visible {
 .statChip {
   padding: 4px 10px;
   border-radius: var(--radius-sm);
-  background: var(--theme-background);
+  background: var(--theme-panelBackground);
   box-shadow: var(--shadow-inset-sm);
   font-size: var(--font-size-sm);
   color: var(--theme-textSecondary);
@@ -504,8 +515,8 @@ button:focus-visible {
 }
 
 .targetListPanel {
-  border-right: 1px solid var(--theme-border);
-  background: var(--theme-panelBackground);
+  background: var(--theme-background);
+  border-radius: var(--radius-lg);
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -523,7 +534,8 @@ button:focus-visible {
 }
 
 .resizeHandle {
-  width: 4px;
+  /* 拖拽手柄本身就是面板缝：透明露出窗体底色，hover 变强调色提示可拖 */
+  width: var(--seam);
   flex-shrink: 0;
   cursor: col-resize;
   background: transparent;
@@ -535,22 +547,9 @@ button:focus-visible {
   background: var(--theme-accent);
 }
 
-.resizeHandleLeft {
-  margin-right: -2px;
-  position: relative;
-  z-index: 1;
-}
-
-.resizeHandleRight {
-  margin-left: -2px;
-  position: relative;
-  z-index: 1;
-}
-
+/* 详情区：透明壳层让位，详情壳本身即工作台的内容面板（cardBackground 最亮） */
 .detailPanel {
   flex: 1;
-  padding: calc(var(--spacing-lg) + 2px);
-  background: var(--theme-background);
   min-width: 0;
   min-height: 0;
   display: flex;
@@ -558,8 +557,8 @@ button:focus-visible {
 }
 
 .eventLogPanel {
-  border-left: 1px solid var(--theme-border);
-  background: var(--theme-panelBackground);
+  background: var(--theme-background);
+  border-radius: var(--radius-lg);
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -604,7 +603,7 @@ button:focus-visible {
   border: none;
   border-radius: var(--radius-sm);
   padding: 0 var(--spacing-sm);
-  background: var(--theme-background);
+  background: var(--theme-panelBackground);
   box-shadow: var(--shadow-inset-sm);
   color: var(--theme-textSecondary);
   font-size: var(--font-size-sm);
@@ -829,7 +828,8 @@ button:focus-visible {
   flex-direction: column;
   height: 100%;
   box-sizing: border-box;
-  box-shadow: var(--shadow-raised-lg);
+  /* 面板层不投影（覆盖 .glassCard 的 raised），层次由缝与色阶承担 */
+  box-shadow: none;
 }
 
 .detailHeader {
@@ -1438,7 +1438,7 @@ button:focus-visible {
 }
 
 .appError {
-  margin: calc(var(--spacing-md) + 6px) calc(var(--spacing-lg) + 2px) 0;
+  margin: 0;
   padding: 10px var(--spacing-md);
 }
 

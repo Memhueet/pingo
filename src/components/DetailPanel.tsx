@@ -62,7 +62,7 @@ export function DetailPanel({
   );
 
   return (
-    <GlassCard className="detailShell" cornerRadius={16}>
+    <GlassCard className="detailShell" cornerRadius={14}>
       <div className="detailHeader">
         <div>
           <h2>{status.target.alias}</h2>
