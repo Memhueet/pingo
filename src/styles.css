@@ -879,8 +879,7 @@ button:focus-visible {
   color: var(--theme-textSecondary);
 }
 
-/* 头部紧凑动作按钮：与统计芯片同几何（同内边距/圆角/字号），
-   凸起 = 可按（新拟态交互语义），按下转凹陷 */
+/* 头部紧凑动作按钮：与统计芯片完全同款的凹陷井，hover 变强调色提示可点，按下凹陷加深 */
 .chipButton {
   display: inline-flex;
   align-items: center;
@@ -888,12 +887,12 @@ button:focus-visible {
   padding: 6px 10px;
   border: none;
   border-radius: var(--radius-sm);
-  background: var(--theme-cardBackground);
+  background: var(--theme-background);
   color: var(--theme-textSecondary);
   font-size: var(--font-size-sm);
   cursor: pointer;
   white-space: nowrap;
-  box-shadow: var(--shadow-raised-sm);
+  box-shadow: var(--shadow-inset-sm);
   transition: box-shadow var(--transition-normal), color var(--transition-fast);
 }
 
@@ -902,7 +901,7 @@ button:focus-visible {
 }
 
 .chipButton:active {
-  box-shadow: var(--shadow-inset-sm);
+  box-shadow: var(--shadow-inset);
 }
 
 /* 快照时刻徽章：沿用统计芯片的凹陷井，强调色文字标记全览模式 */
