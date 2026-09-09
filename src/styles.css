@@ -577,7 +577,8 @@ button:focus-visible {
 .targetGrid {
   flex: 1;
   overflow-y: auto;
-  padding: var(--spacing-md);
+  /* 左右内边距比基准多 6px，给卡片 hover 凸起阴影留绘制空间避免被裁 */
+  padding: var(--spacing-md) calc(var(--spacing-md) + 6px);
   display: flex;
   flex-direction: column;
   gap: calc(var(--spacing-xs) + 6px);
@@ -1503,6 +1504,10 @@ button:focus-visible {
 .settingsContent {
   max-height: 400px;
   overflow-y: auto;
+  /* 负边距+内边距等量抵消：滚动口左右各让 6px 给边缘元素的凸起阴影，
+   * 内容与页签仍对齐；放滚动容器上（而非子元素）避免产生水平溢出 */
+  padding: 0 6px;
+  margin: 0 -6px;
 }
 
 .settingsTabContent {
@@ -1518,25 +1523,19 @@ button:focus-visible {
   margin-top: var(--spacing-xs);
 }
 
+/* 主题卡为内凹选井：内阴影不外溢，天然避免滚动容器裁剪边缘阴影；
+   预览块以所选主题自身的双向阴影浮起，形成"井中托起"的层次 */
 .themeCard {
   position: relative;
   border: none;
   border-radius: var(--radius-lg);
   padding: var(--spacing-sm);
   cursor: pointer;
-  background: var(--theme-cardBackground);
-  box-shadow: var(--shadow-raised-sm);
+  background: var(--theme-background);
+  box-shadow: var(--shadow-inset);
   transition: box-shadow var(--transition-normal);
   font-size: var(--font-size-sm);
   color: var(--theme-textSecondary);
-}
-
-.themeCard:hover {
-  box-shadow: var(--shadow-raised);
-}
-
-.themeCard:active {
-  box-shadow: var(--shadow-inset-sm);
 }
 
 .themeCard.selected {
@@ -1552,6 +1551,8 @@ button:focus-visible {
   flex-direction: column;
   padding: 6px;
   box-sizing: border-box;
+  box-shadow: 2px 2px 5px var(--theme-preview-shadowDark, rgba(0, 0, 0, 0.25)),
+    -2px -2px 5px var(--theme-preview-shadowLight, rgba(255, 255, 255, 0.4));
 }
 
 .previewHeader {
@@ -1581,7 +1582,8 @@ button:focus-visible {
   height: 60%;
   background: var(--theme-preview-card, #e0e5ec);
   border-radius: var(--radius-sm);
-  box-shadow: 2px 2px 4px rgba(0, 0, 0, 0.25), -2px -2px 4px rgba(255, 255, 255, 0.4);
+  box-shadow: 2px 2px 4px var(--theme-preview-shadowDark, rgba(0, 0, 0, 0.25)),
+    -2px -2px 4px var(--theme-preview-shadowLight, rgba(255, 255, 255, 0.4));
 }
 
 .themeInfo {

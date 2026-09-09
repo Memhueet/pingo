@@ -371,6 +371,8 @@ export function SettingsPanel({ settings, sortMode, onClose, onSave, onSortModeC
                         "--theme-preview-text": theme.text,
                         "--theme-preview-border": theme.border,
                         "--theme-preview-accent": theme.accent,
+                        "--theme-preview-shadowLight": theme.shadowLight,
+                        "--theme-preview-shadowDark": theme.shadowDark,
                       } as React.CSSProperties}
                     >
                       <div className="themePreview">
