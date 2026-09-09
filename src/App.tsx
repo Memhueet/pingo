@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, useCallback, useRef } from "react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { open } from "@tauri-apps/plugin-dialog";
+import { X } from "lucide-react";
 import "./styles.css";
 import {
   bootstrap,
@@ -251,6 +252,13 @@ export default function App() {
       cancelled = true;
     };
   }, [selectedTargetId, dataFilePath, settings.chartWindowSeconds]);
+
+  // 错误条 8 秒后自动消失，新错误会重置计时；也可手动关闭
+  useEffect(() => {
+    if (!appError) return;
+    const timer = window.setTimeout(() => setAppError(null), 8000);
+    return () => window.clearTimeout(timer);
+  }, [appError]);
 
   const theme = useMemo(() => getThemeById(settings.themeId), [settings.themeId]);
   const effectiveAliasColor = settings.aliasColor || theme.textSecondary;
@@ -687,7 +695,19 @@ export default function App() {
         onClearHistory={requestClearHistory}
         currentFileName={dataFilePath}
       />
-      {appError ? <div className="appError">{appError}</div> : null}
+      {appError ? (
+        <div className="appError">
+          <span>{appError}</span>
+          <button
+            type="button"
+            className="appErrorClose"
+            aria-label="关闭错误提示"
+            onClick={() => setAppError(null)}
+          >
+            <X size={14} />
+          </button>
+        </div>
+      ) : null}
 
       {!hasActiveFile ? (
         <div className="welcomeScreen">

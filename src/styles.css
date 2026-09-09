@@ -1506,7 +1506,30 @@ button:focus-visible {
 
 .appError {
   margin: 0;
-  padding: 10px var(--spacing-md);
+  padding: 8px var(--spacing-md);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-md);
+}
+
+.appErrorClose {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  transition: background var(--transition-fast);
+}
+
+.appErrorClose:hover {
+  background: color-mix(in srgb, var(--theme-timeout) 12%, transparent);
 }
 
 .formError {
