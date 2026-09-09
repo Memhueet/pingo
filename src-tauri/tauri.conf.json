@@ -1,7 +1,7 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "Pingo",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "identifier": "com.pingo.app",
   "build": {
     "beforeDevCommand": "npm run dev",
@@ -13,7 +13,7 @@
     "windows": [
       {
         "title": "Pingo",
-        "width": 1180,
+        "width": 1380,
         "height": 780,
         "minWidth": 900,
         "minHeight": 620
