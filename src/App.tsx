@@ -4,7 +4,7 @@ import { open } from "@tauri-apps/plugin-dialog";
 import "./styles.css";
 import {
   bootstrap,
-  loadSamples,
+  loadSamplesLatestWindow,
   onPingSample,
   saveSettings,
   saveTarget,
@@ -208,10 +208,11 @@ export default function App() {
     if (!selectedTargetId) return;
     let cancelled = false;
     const windowSeconds = chartWindowSecondsRef.current;
-    const from = new Date(
-      Date.now() - (windowSeconds + CHART_WINDOW_HYSTERESIS_SECONDS) * 1000,
-    ).toISOString();
-    loadSamples(selectedTargetId, from)
+    // 锚定最新样本而非当前时刻：活跃目标≈最近窗口；历史/停用目标落在最后有数据的一段
+    loadSamplesLatestWindow(
+      selectedTargetId,
+      windowSeconds + CHART_WINDOW_HYSTERESIS_SECONDS,
+    )
       .then((loaded) => {
         if (cancelled) return;
         setTargets((current) =>

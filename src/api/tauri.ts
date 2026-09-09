@@ -52,6 +52,13 @@ export function loadSamples(
   });
 }
 
+/** 选中目标按"最新样本锚点"取窗口：历史/停用目标落在最后有数据的一段 */
+export function loadSamplesLatestWindow(targetId: string, windowSecs: number) {
+  return invoke<PingSample[]>("samples", {
+    query: { targetId, from: null, to: null, latestWindowSecs: windowSecs },
+  });
+}
+
 /** 全览模式取全量快照；日后若改为 Rust 端分箱降采样，仅替换此实现 */
 export function loadAllSamples(targetId: string) {
   return loadSamples(targetId);

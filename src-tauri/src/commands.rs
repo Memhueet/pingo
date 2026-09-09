@@ -44,6 +44,9 @@ pub struct SamplesQuery {
     pub target_id: Uuid,
     pub from: Option<DateTime<Utc>>,
     pub to: Option<DateTime<Utc>>,
+    /// 设置时忽略 from/to：以该目标最新样本时刻为锚点取前 N 秒窗口，
+    /// 历史/停用目标落在最后有数据的一段而非当前时刻
+    pub latest_window_secs: Option<i64>,
 }
 
 #[derive(Debug, Clone, serde::Deserialize)]
@@ -212,6 +215,11 @@ pub async fn samples(
     query: SamplesQuery,
 ) -> CommandResult<Vec<PingSample>> {
     let storage = state.storage.lock().await;
+    if let Some(window_secs) = query.latest_window_secs {
+        return storage
+            .samples_latest_window(query.target_id, window_secs)
+            .map_err(|e| AppError::Storage(e.to_string()).into());
+    }
     storage
         .samples_for_target(query.target_id, query.from, query.to)
         .map_err(|e| AppError::Storage(e.to_string()).into())

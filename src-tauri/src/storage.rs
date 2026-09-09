@@ -359,6 +359,28 @@ impl Storage {
         Ok(out)
     }
 
+    /// 选中目标的"最新窗口"：以该目标最新样本时刻为锚点，返回其前 window_secs 内的样本。
+    /// 活跃目标的锚点≈当前时刻；历史/停用目标落在最后有数据的一段，避免打开旧数据文件时图表为空
+    pub fn samples_latest_window(
+        &self,
+        target_id: Uuid,
+        window_secs: i64,
+    ) -> SqlResult<Vec<PingSample>> {
+        let max: Option<String> = self.conn.query_row(
+            "SELECT MAX(sent_at) FROM ping_samples WHERE target_id = ?1",
+            params![target_id.to_string()],
+            |row| row.get(0),
+        )?;
+        let Some(max_sent_at) = max else {
+            return Ok(Vec::new());
+        };
+        // sent_at 由本应用以 rfc3339 写入；解析异常时退回当前时刻，行为与旧版按当前时间取窗一致
+        let anchor = max_sent_at
+            .parse::<DateTime<Utc>>()
+            .unwrap_or_else(|_| Utc::now());
+        self.samples_for_target(target_id, Some(anchor - chrono::Duration::seconds(window_secs)), None)
+    }
+
     pub fn cleanup_retention(&self, days: i64) -> SqlResult<usize> {
         let cutoff = (Utc::now() - chrono::Duration::days(days)).to_rfc3339();
         let deleted = self
@@ -688,5 +710,57 @@ mod tests {
         assert_eq!(b.timeout_count, 0);
         assert_eq!(b.filtered_timeout_count, 0);
         assert_eq!(b.pending_timeout_run, 0);
+    }
+
+    #[test]
+    fn samples_latest_window_anchors_to_newest_sample() {
+        let harness = TestHarness::new();
+        let target = uuid::Uuid::new_v4();
+        let empty_target = uuid::Uuid::new_v4();
+        let base = chrono::Utc::now() - chrono::Duration::hours(48);
+        harness
+            .storage
+            .save_target(&Target {
+                id: target,
+                address: "127.0.0.1".to_string(),
+                alias: String::new(),
+                enabled: true,
+                created_at: base,
+                updated_at: base,
+            })
+            .unwrap();
+
+        let make = |offset_secs: i64| PingSample {
+            id: uuid::Uuid::new_v4(),
+            target_id: target,
+            sent_at: base + chrono::Duration::seconds(offset_secs),
+            status: PingStatus::Success,
+            latency_ms: Some(10.0),
+            error_kind: None,
+        };
+        // 一小时活跃段 + 两天前的零散段；最新样本在 base+3620
+        let samples: Vec<PingSample> = (0..6)
+            .map(|i| make(i * 10))
+            .chain((0..3).map(|i| make(3600 + i * 10)))
+            .collect();
+        for sample in &samples {
+            harness.storage.insert_sample(sample).unwrap();
+        }
+
+        // 窗口 30s：锚定 base+3620，只返回 base+3600 起的最后一段
+        let window = harness.storage.samples_latest_window(target, 30).unwrap();
+        assert_eq!(window.len(), 3);
+        assert_eq!(window[0].sent_at, base + chrono::Duration::seconds(3600));
+        assert_eq!(
+            window[2].sent_at,
+            base + chrono::Duration::seconds(3620)
+        );
+
+        // 从无数据的目标返回空
+        assert!(harness
+            .storage
+            .samples_latest_window(empty_target, 30)
+            .unwrap()
+            .is_empty());
     }
 }
