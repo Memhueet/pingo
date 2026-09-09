@@ -5,6 +5,7 @@ import { LatencyChart } from "./LatencyChart";
 import { GlassCard } from "./GlassCard";
 import { filterIsolatedTimeouts, statsView } from "../utils/stats";
 import { loadAllSamples } from "../api/tauri";
+import { Activity, History, RefreshCw } from "lucide-react";
 
 /** 全览模式的冻结快照：样本、统计计数器与拍摄时刻一起定格 */
 interface FrozenSnapshot {
@@ -68,29 +69,34 @@ export function DetailPanel({
           <h2>{status.target.alias}</h2>
           <p>{status.target.address}</p>
         </div>
-        <div className="snapshotActions">
+        <div className="statRow">
           {frozen ? (
             <>
+              <button type="button" className="chipButton" onClick={takeSnapshot}>
+                <RefreshCw size={12} />
+                刷新到最新
+              </button>
+              <button
+                type="button"
+                className="chipButton"
+                onClick={() => {
+                  snapshotEpochRef.current += 1;
+                  setFrozen(null);
+                }}
+              >
+                <Activity size={12} />
+                返回实时
+              </button>
               <span className="frozenBadge">
                 快照于 {new Date(frozen.takenAt).toLocaleTimeString()}
               </span>
-              <button type="button" className="resetBtn" onClick={takeSnapshot}>
-                刷新到最新
-              </button>
-              <button type="button" className="resetBtn" onClick={() => {
-                snapshotEpochRef.current += 1;
-                setFrozen(null);
-              }}>
-                返回实时
-              </button>
             </>
           ) : (
-            <button type="button" className="resetBtn" onClick={takeSnapshot}>
+            <button type="button" className="chipButton" onClick={takeSnapshot}>
+              <History size={12} />
               查看全部
             </button>
           )}
-        </div>
-        <div className="statRow">
           <span>Average {avgLatency.toFixed(1)} ms</span>
           <span>Max {maxLatency.toFixed(1)} ms</span>
           <span>Timeouts {timeoutCount}</span>

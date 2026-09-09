@@ -879,15 +879,37 @@ button:focus-visible {
   color: var(--theme-textSecondary);
 }
 
-.snapshotActions {
-  display: flex;
+/* 头部紧凑动作按钮：与统计芯片同几何（同内边距/圆角/字号），
+   凸起 = 可按（新拟态交互语义），按下转凹陷 */
+.chipButton {
+  display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: 4px;
+  padding: 6px 10px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: var(--theme-cardBackground);
+  color: var(--theme-textSecondary);
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+  white-space: nowrap;
+  box-shadow: var(--shadow-raised-sm);
+  transition: box-shadow var(--transition-normal), color var(--transition-fast);
 }
 
-.frozenBadge {
-  font-size: 12px;
-  color: var(--theme-textSecondary);
+.chipButton:hover {
+  color: var(--theme-accent);
+}
+
+.chipButton:active {
+  box-shadow: var(--shadow-inset-sm);
+}
+
+/* 快照时刻徽章：沿用统计芯片的凹陷井，强调色文字标记全览模式 */
+.statRow .frozenBadge {
+  display: inline-flex;
+  align-items: center;
+  color: var(--theme-accent);
 }
 
 .statRow {
