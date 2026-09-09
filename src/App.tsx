@@ -31,7 +31,7 @@ import { emptyFullStats, statsView } from "./utils/stats";
 import type { AppSettings, Target, TargetSaveData, TargetStatus } from "./types";
 import { defaultBackoffIntervals } from "./types";
 import { isValidAddress } from "./validation";
-import { compareAddresses } from "./utils/address";
+import { compareAddresses, incrementAddress, sameAddress } from "./utils/address";
 import { getThemeById } from "./themes";
 
 // 同步读取应用级外观配置，开始页首帧即呈现上次的主题，避免闪白
@@ -436,6 +436,67 @@ export default function App() {
     }
   };
 
+  /** 复制单个目标：IP 末段 +1（满则回绕 1），新 IP 已存在则失败 */
+  const handleDuplicateTarget = async (source: TargetStatus) => {
+    const newAddress = incrementAddress(source.target.address);
+    if (targets.some((t) => sameAddress(t.target.address, newAddress))) {
+      setAppError(`复制失败：${newAddress} 已存在`);
+      return;
+    }
+    try {
+      const t = await saveTarget({ address: newAddress, alias: source.target.alias });
+      setTargets((current) => [...current, createTargetStatus(t)]);
+      addLog(`已复制目标 ${source.target.address} → ${newAddress}`, "info");
+    } catch (e) {
+      setAppError((e as any)?.message ?? String(e));
+    }
+  };
+
+  /** 批量复制：各族（IPv4/IPv6）以族内最大的 IP 为起点顺序分配，任一重复则整批失败 */
+  const handleBatchDuplicateTargets = async () => {
+    if (selectedTargetIds.size === 0) return;
+    const sources = targets
+      .filter((s) => selectedTargetIds.has(s.target.id))
+      .sort((a, b) => compareAddresses(a.target.address, b.target.address));
+    const groups = new Map<boolean, TargetStatus[]>();
+    for (const source of sources) {
+      const isV6 = source.target.address.includes(":");
+      const list = groups.get(isV6) ?? [];
+      list.push(source);
+      groups.set(isV6, list);
+    }
+    const existing = targets.map((t) => t.target.address);
+    const assignments = new Map<TargetStatus, string>();
+    for (const list of groups.values()) {
+      const maxSource = list.reduce((max, s) =>
+        compareAddresses(s.target.address, max.target.address) > 0 ? s : max,
+      );
+      let next = incrementAddress(maxSource.target.address);
+      for (const source of list) {
+        if (
+          existing.some((addr) => sameAddress(addr, next)) ||
+          [...assignments.values()].some((addr) => sameAddress(addr, next))
+        ) {
+          setAppError(`批量复制失败：${next} 已存在`);
+          return;
+        }
+        assignments.set(source, next);
+        next = incrementAddress(next);
+      }
+    }
+    try {
+      for (const source of sources) {
+        const address = assignments.get(source);
+        if (address === undefined) continue;
+        const t = await saveTarget({ address, alias: source.target.alias });
+        setTargets((current) => [...current, createTargetStatus(t)]);
+      }
+      addLog(`批量复制了 ${sources.length} 个目标`, "info");
+    } catch (e) {
+      setAppError((e as any)?.message ?? String(e));
+    }
+  };
+
   const handleBatchToggle = async (enable: boolean) => {
     if (selectedTargetIds.size === 0) return;
     const count = selectedTargetIds.size;
@@ -725,6 +786,14 @@ export default function App() {
                   <button onClick={() => handleBatchToggle(false)}>
                     批量禁用
                   </button>
+                  <button
+                    onClick={() => {
+                      closeContextMenu();
+                      void handleBatchDuplicateTargets();
+                    }}
+                  >
+                    批量复制
+                  </button>
                   <button className="deleteMenuItem" onClick={requestBatchDelete}>
                     批量删除
                   </button>
@@ -761,6 +830,16 @@ export default function App() {
                   }}
                 >
                   {target?.target.enabled ? "禁用" : "启用"}
+                </button>
+                <button
+                  onClick={() => {
+                    if (target) {
+                      closeContextMenu();
+                      void handleDuplicateTarget(target);
+                    }
+                  }}
+                >
+                  复制
                 </button>
                 <button
                   className="deleteMenuItem"

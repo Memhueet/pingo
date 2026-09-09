@@ -11,3 +11,30 @@ export function compareAddresses(a: string, b: string): number {
   if (aIsV6) return a.localeCompare(b);
   return ipv4ToNum(a) - ipv4ToNum(b);
 }
+
+/** 地址末段自增：仅修改最后一个数字段，前缀保持不变；末段到达最大值时回绕到 1 */
+export function incrementAddress(address: string): string {
+  if (!address.includes(":")) {
+    const octets = address.split(".");
+    const last = Number(octets[3]);
+    octets[3] = String(last === 255 ? 1 : last + 1);
+    return octets.join(".");
+  }
+  // IPv6：以 "::" 结尾（无显式末组）视作追加 ":1"；内嵌 IPv4 末组则末字节自增
+  if (address.endsWith(":")) return `${address}1`;
+  const head = address.slice(0, address.lastIndexOf(":") + 1);
+  const tail = address.slice(address.lastIndexOf(":") + 1);
+  if (tail.includes(".")) {
+    const octets = tail.split(".");
+    const last = Number(octets[3]);
+    octets[3] = String(last === 255 ? 1 : last + 1);
+    return head + octets.join(".");
+  }
+  const value = parseInt(tail, 16);
+  return head + (value === 0xffff ? "1" : (value + 1).toString(16));
+}
+
+/** 地址相等：忽略大小写，覆盖 IPv6 十六进制大小写差异 */
+export function sameAddress(a: string, b: string): boolean {
+  return a.toLowerCase() === b.toLowerCase();
+}
