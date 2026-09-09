@@ -60,7 +60,7 @@ npm run tauri build                              # 生产构建（桌面安装�
 ## UI 约定
 
 - 桌面应用审美遵循"简约反装饰"：克制用色、亮暗主题下都要可读，弹窗、字体、圆角遵循现有设计令牌基准（详见 `docs/ui-design.md` 与 `docs/ui-naming-guide.md`）。
-- 视觉体系为新拟态（Soft UI）：VS Code 式浮动工作台 + 三层同色相不透明表面按明度分层——窗体缝隙基色与顶栏/左右面板同为深色 chrome（`panelBackground`，最深层），详情壳作为内容面（`cardBackground`，最亮层）浮出于 `--seam`（6px）细缝中；chrome 层不投影，卡片/按钮等内容与凹陷井（`background`）在内容面上按明度分层。元素层立体感由 `shadowLight`/`shadowDark` 双向阴影塑造（凸起 raised / 凹陷 inset）；禁止半透明表面、背景模糊与硬边框装饰（唯一例外：弹窗遮罩 `.modalOverlay`）。新增主题时须保持分层关系：`shadowLight` 亮于 `cardBackground`、`shadowDark` 深于 `panelBackground`，文字对三层表面 ≥ 4.5:1。
+- 视觉体系为新拟态（Soft UI）：VS Code 式浮动工作台 + 三层同色相不透明表面按明度分层——窗体缝隙基色（`panelBackground`，最深层）自 `--seam`（6px）细缝露出；顶栏与左右面板（`background`）为比基色亮一档的圆角 chrome 面，不投影；详情壳/卡片/按钮等内容面（`cardBackground`，最亮）浮出于细缝。分层步长基准：缝隙→chrome ≈ 3%、chrome→内容面 ≥ 4%，保证分界与层次同时可读。元素层立体感由 `shadowLight`/`shadowDark` 双向阴影塑造（凸起 raised / 凹陷 inset）；禁止半透明表面、背景模糊与硬边框装饰（唯一例外：弹窗遮罩 `.modalOverlay`）。新增主题时须保持分层关系：`shadowLight` 亮于 `cardBackground`、`shadowDark` 深于 `panelBackground`，文字对三层表面 ≥ 4.5:1。
 - 阴影不得与遮罩模糊叠加（弹窗去掉凸起阴影是有意为之，勿"改回"）。
 - 面板显隐采用 VS Code 式顶栏按钮交互；目标卡片为三行布局，以 IP 为主标识。
 - 需防误触：涉及删除/清空历史等破坏性操作要有确认；WebView 默认右键菜单已禁用，勿重新放开。

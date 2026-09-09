@@ -2,9 +2,9 @@ export interface Theme {
   id: string;
   name: string;
   category: "light" | "neutral" | "dark";
-  /** 凹陷井：内容面（cardBackground）上的输入井/选井填充，明度居中 */
+  /** chrome 面板与凹陷井：顶栏/左右面板填充及内容面上的输入井，比内容面深一档 */
   background: string;
-  /** 缝隙基座与 chrome：窗体底色、顶栏与左右面板填充，三层中最深 */
+  /** 缝隙基座：窗体底色，自细缝露出，三层中最深 */
   panelBackground: string;
   /** 内容表面：详情壳、卡片、按钮等浮起元素，三层中最亮 */
   cardBackground: string;
@@ -33,11 +33,12 @@ export interface Theme {
 
 /**
  * 新拟态（Neumorphism）主题：VS Code 式浮动工作台 + 三层同色相不透明
- * 表面按明度分层——panelBackground 为窗体缝隙基色，同时是顶栏与
- * 左右面板的深色 chrome（最深层）；background 为内容面上的凹陷井填充
- * （居中）；cardBackground 为详情壳/卡片/按钮等内容面（最亮），
- * 唯一浮出于细缝之中。chrome 层不投影，元素层立体感由
- * shadowLight / shadowDark 双向柔和阴影塑造，禁止半透明表面与背景模糊。
+ * 表面按明度分层——panelBackground 为窗体缝隙基色（最深层），自细缝露出；
+ * background 为顶栏与左右面板的 chrome 填充，以及内容面上的凹陷井（居中）；
+ * cardBackground 为详情壳/卡片/按钮等内容面（最亮），浮出于细缝之中。
+ * chrome 层不投影，元素层立体感由 shadowLight / shadowDark 双向柔和阴影
+ * 塑造，禁止半透明表面与背景模糊。
+ * 分层步长基准：缝隙→chrome ≈ 3%，chrome→内容面 ≥ 4%（保证分界与层次同时可读）。
  * 分层约束：shadowLight 必须亮于 cardBackground、shadowDark 必须深于 panelBackground；
  * 正文/次要文字对三层表面的对比度 ≥ 4.5:1（鲜草绿为中性参照主题，按其参照基准放宽）。
  * 亮色主题的状态色取深色变体，暗色主题的状态色取浅色变体，保证两套主题下均可读。
@@ -47,9 +48,9 @@ export const themes: Theme[] = [
     id: "pure-white",
     name: "纯净白",
     category: "light",
-    background: "#e0e5ec",
+    background: "#dce2e9",
     panelBackground: "#d2d9e3",
-    cardBackground: "#ebeef3",
+    cardBackground: "#eaedf2",
     text: "#1e293b",
     textSecondary: "#4f5e76",
     border: "#c6d0de",
@@ -69,9 +70,9 @@ export const themes: Theme[] = [
     id: "sunrise",
     name: "晨曦黄",
     category: "light",
-    background: "#ece2c9",
+    background: "#eadfc4",
     panelBackground: "#e6d9b8",
-    cardBackground: "#f1e9d6",
+    cardBackground: "#f1e8d5",
     text: "#78350f",
     textSecondary: "#7d5423",
     border: "#d8caa4",
@@ -91,9 +92,9 @@ export const themes: Theme[] = [
     id: "gray-blue",
     name: "灰调蓝",
     category: "neutral",
-    background: "#cdd8e6",
+    background: "#ccd7e5",
     panelBackground: "#c1cfe0",
-    cardBackground: "#d7e0eb",
+    cardBackground: "#dbe3ed",
     text: "#24344d",
     textSecondary: "#435675",
     border: "#b3c2d6",
@@ -115,8 +116,8 @@ export const themes: Theme[] = [
     id: "grass-green",
     name: "鲜草绿",
     category: "neutral",
-    background: "#58805d",
-    panelBackground: "#517555",
+    background: "#517555",
+    panelBackground: "#4a6b4e",
     cardBackground: "#5a835f",
     text: "#f2f3e9",
     textSecondary: "#dee0cd",
@@ -137,9 +138,9 @@ export const themes: Theme[] = [
     id: "deep-black",
     name: "深邃黑",
     category: "dark",
-    background: "#1c1f26",
+    background: "#1e2128",
     panelBackground: "#17191f",
-    cardBackground: "#21252d",
+    cardBackground: "#272c36",
     text: "#e8ebf0",
     textSecondary: "#9aa4b2",
     border: "#2a303b",
@@ -151,17 +152,17 @@ export const themes: Theme[] = [
     chartSuccess: "#38bdf8",
     chartTimeout: "#f87171",
     chartAxis: "#8b95a5",
-    chartGrid: "#262c37",
-    shadowLight: "#262b35",
+    chartGrid: "#2e3543",
+    shadowLight: "#2c323e",
     shadowDark: "#121419",
   },
   {
     id: "aurora-purple",
     name: "极光紫",
     category: "dark",
-    background: "#252041",
+    background: "#262042",
     panelBackground: "#1f1b37",
-    cardBackground: "#2a244a",
+    cardBackground: "#2e2852",
     text: "#eae7fb",
     textSecondary: "#b3abd6",
     border: "#362f5e",
@@ -173,7 +174,7 @@ export const themes: Theme[] = [
     chartSuccess: "#2dd4bf",
     chartTimeout: "#fb7185",
     chartAxis: "#a79ed1",
-    chartGrid: "#312a5b",
+    chartGrid: "#373064",
     shadowLight: "#322b5b",
     shadowDark: "#171335",
   },

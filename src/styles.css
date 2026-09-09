@@ -40,9 +40,9 @@
   --z-index-modal: 1000;
 
   /* 以下为 pure-white 主题的回退值，运行时由 themes.ts 覆盖 */
-  --theme-background: #e0e5ec;
-  --theme-panelBackground: #e0e5ec;
-  --theme-cardBackground: #e0e5ec;
+  --theme-background: #dce2e9;
+  --theme-panelBackground: #d2d9e3;
+  --theme-cardBackground: #eaedf2;
   --theme-text: #1e293b;
   --theme-textSecondary: #4f5e76;
   --theme-border: #cdd6e3;
@@ -136,7 +136,7 @@ button:focus-visible {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--theme-panelBackground);
+  background: var(--theme-background);
   border-radius: var(--radius-lg);
 }
 
@@ -210,8 +210,8 @@ button:focus-visible {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   align-items: center;
-  /* 顶栏融入缝隙基座（VS Code 标题栏式深色 chrome），仅内容面浮起 */
-  background: var(--theme-panelBackground);
+  /* chrome 面板：比缝隙基色亮一档，与内容面拉开 ≥4% 明度 */
+  background: var(--theme-background);
   border-radius: var(--radius-lg);
   flex-shrink: 0;
   position: relative;
@@ -543,8 +543,8 @@ button:focus-visible {
 }
 
 .targetListPanel {
-  /* 侧栏融入缝隙基座（VS Code 侧栏式深色 chrome），与中间内容面拉开色深 */
-  background: var(--theme-panelBackground);
+  /* chrome 面板：比缝隙基色亮一档，缝与色阶共同构成面板分界 */
+  background: var(--theme-background);
   border-radius: var(--radius-lg);
   display: flex;
   flex-direction: column;
@@ -586,7 +586,7 @@ button:focus-visible {
 }
 
 .eventLogPanel {
-  background: var(--theme-panelBackground);
+  background: var(--theme-background);
   border-radius: var(--radius-lg);
   overflow: hidden;
   display: flex;

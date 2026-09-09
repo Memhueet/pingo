@@ -8,7 +8,7 @@
 
 ## 设计原则：新拟态（Neumorphism / Soft UI）
 
-1. **浮动工作台 + 分层单色表面**：布局参照 VS Code 新版工作台——顶栏与左右面板与窗体底色同为一层深色 chrome（`--theme-panelBackground`，最深层，不投影），详情壳作为内容面（`--theme-cardBackground`，最亮层）浮出于 `--seam`（6px）细缝中；内容面上的输入井/选井（`--theme-background`）明度居中；不使用半透明表面与硬边框分隔。分层约束：`shadowLight` 必须亮于 `cardBackground`、`shadowDark` 必须深于 `panelBackground`。
+1. **浮动工作台 + 分层单色表面**：布局参照 VS Code 新版工作台——窗体缝隙基色 `--theme-panelBackground`（最深层）自 `--seam`（6px）细缝中露出；顶栏与左右面板为比基色亮一档的圆角 chrome 面（`--theme-background`，不投影）；详情壳/卡片/按钮等内容面（`--theme-cardBackground`，最亮）浮出于细缝，内容面上的输入井/选井同用 `--theme-background`。分层步长基准：缝隙→chrome ≈ 3%、chrome→内容面 ≥ 4%，保证分界与层次同时可读。不使用半透明表面与硬边框分隔。分层约束：`shadowLight` 必须亮于 `cardBackground`、`shadowDark` 必须深于 `panelBackground`。
 2. **光影塑形**：立体感仅由双向阴影塑造——左上高光 `--theme-shadowLight` + 右下暗影 `--theme-shadowDark`：
    - 凸起（raised）：静止的卡片、按钮、弹窗，使用 `--shadow-raised-sm / -raised / -raised-lg`；
    - 凹陷（inset）：输入井、按下态，使用 `--shadow-inset / -inset-sm`。
@@ -79,9 +79,9 @@ interface Theme {
   id: string;
   name: string;
   category: "light" | "neutral" | "dark";
-  /** 凹陷井：内容面上的输入井/选井填充，明度居中 */
+  /** chrome 面板与凹陷井：顶栏/左右面板填充及内容面上的输入井，比内容面深一档 */
   background: string;
-  /** 缝隙基座与 chrome：窗体底色、顶栏与左右面板填充，三层中最深 */
+  /** 缝隙基座：窗体底色，自细缝露出，三层中最深 */
   panelBackground: string;
   /** 内容表面：详情壳、卡片、按钮等浮起元素，三层中最亮 */
   cardBackground: string;
@@ -165,7 +165,7 @@ interface Theme {
 └─────────────────────────────────────────────────────────────┘
 ```
 
-VS Code 式浮动工作台：顶栏与左右侧栏与窗体底色同融为一层深色 chrome，仅详情壳作为更亮一档的内容面在 6px 细缝中浮起；面板间不放硬分隔线，拖拽手柄本身即缝隙（hover 变强调色）。
+VS Code 式浮动工作台：窗体缝隙基色自 6px 细缝中露出，顶栏与左右面板为亮一档的圆角 chrome 面，详情壳为更亮一档的内容面浮于细缝中；面板间不放硬分隔线，拖拽手柄本身即缝隙（hover 变强调色）。
 
 未打开数据文件时显示欢迎页（选择新建工作空间或打开数据文件）。
 
