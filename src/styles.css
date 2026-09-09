@@ -70,6 +70,31 @@
 
 body {
   margin: 0;
+  /* 应用壳自身即整窗布局，文档级不出现滚动条 */
+  overflow: hidden;
+}
+
+/* 主题化细滚动条：替代系统默认粗滚动条，滚动仅在内容真正溢出时可用 */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--theme-border);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--theme-textSecondary);
+}
+
+::-webkit-scrollbar-corner {
+  background: transparent;
 }
 
 button,
@@ -95,6 +120,8 @@ button:focus-visible {
  * 面板层不投影，层次由缝与色阶分离；元素层立体感仍由双向阴影塑造。 */
 .appShell {
   height: 100vh;
+  /* 无全局 border-box，必须显式声明：否则 100vh + padding 撑出文档级 12px 滚动 */
+  box-sizing: border-box;
   display: flex;
   flex-direction: column;
   overflow: hidden;
