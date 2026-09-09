@@ -25,6 +25,7 @@ import { TargetEditor } from "./components/TargetEditor";
 import { TargetGrid } from "./components/TargetGrid";
 import { Toolbar } from "./components/Toolbar";
 import { EventLog } from "./components/EventLog";
+import { ConfirmDialog } from "./components/ConfirmDialog";
 import { applyPingSample, CHART_WINDOW_HYSTERESIS_SECONDS, createTargetStatus, loadAppearance, normalizeSettings, saveAppearance, trimSamplesWindow } from "./state/usePingoStore";
 import { emptyFullStats, statsView } from "./utils/stats";
 import type { AppSettings, Target, TargetSaveData, TargetStatus } from "./types";
@@ -62,6 +63,14 @@ interface LogEntry {
 
 let logIdCounter = 0;
 
+/** 破坏性操作的确认弹窗描述：确认后执行的动作一并暂存 */
+interface ConfirmRequest {
+  title: string;
+  message: string;
+  confirmText: string;
+  action: () => void | Promise<void>;
+}
+
 export default function App() {
   const [settings, setSettings] = useState(defaultSettings);
   const [targets, setTargets] = useState<TargetStatus[]>([]);
@@ -81,6 +90,7 @@ export default function App() {
   const [batchImportError, setBatchImportError] = useState<string | null>(null);
   const [logEntries, setLogEntries] = useState<LogEntry[]>([]);
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; targetId: string } | null>(null);
+  const [confirmRequest, setConfirmRequest] = useState<ConfirmRequest | null>(null);
   const [leftPanelVisible, setLeftPanelVisible] = useState(true);
   const [rightPanelVisible, setRightPanelVisible] = useState(true);
   const [leftPanelWidth, setLeftPanelWidth] = useState(320);
@@ -410,8 +420,6 @@ export default function App() {
   const handleBatchDelete = async () => {
     if (selectedTargetIds.size === 0) return;
     const count = selectedTargetIds.size;
-    const confirmed = window.confirm(`确定要删除选中的 ${count} 个目标吗？`);
-    if (!confirmed) return;
     try {
       for (const id of selectedTargetIds) {
         await deleteTarget(id);
@@ -539,7 +547,6 @@ export default function App() {
   };
 
   const handleClearHistory = async () => {
-    if (!confirm("确定要清空所有历史 ping 数据吗？目标配置会保留。")) return;
     try {
       await clearHistory();
       setTargets((current) =>
@@ -554,6 +561,27 @@ export default function App() {
     } catch (e) {
       setAppError((e as any)?.message ?? String(e));
     }
+  };
+
+  /** 破坏性操作一律先经确认弹窗（原生 confirm 在 WebView 中不可用） */
+  const requestClearHistory = () => {
+    setConfirmRequest({
+      title: "清空历史数据",
+      message: "将删除所有目标的全部 Ping 历史记录，目标配置会保留。此操作不可撤销。",
+      confirmText: "清空",
+      action: handleClearHistory,
+    });
+  };
+
+  const requestBatchDelete = () => {
+    const count = selectedTargetIds.size;
+    closeContextMenu();
+    setConfirmRequest({
+      title: "删除目标",
+      message: `将删除选中的 ${count} 个目标及其全部历史数据。此操作不可撤销。`,
+      confirmText: "删除",
+      action: handleBatchDelete,
+    });
   };
 
   return (
@@ -595,7 +623,7 @@ export default function App() {
         onNewDataFile={handleNewDataFile}
         onOpenDataFile={handleOpenDataFile}
         onSaveDataFileAs={handleSaveDataFileAs}
-        onClearHistory={handleClearHistory}
+        onClearHistory={requestClearHistory}
         currentFileName={dataFilePath}
       />
       {appError ? <div className="appError">{appError}</div> : null}
@@ -697,7 +725,7 @@ export default function App() {
                   <button onClick={() => handleBatchToggle(false)}>
                     批量禁用
                   </button>
-                  <button className="deleteMenuItem" onClick={handleBatchDelete}>
+                  <button className="deleteMenuItem" onClick={requestBatchDelete}>
                     批量删除
                   </button>
                 </>
@@ -736,16 +764,27 @@ export default function App() {
                 </button>
                 <button
                   className="deleteMenuItem"
-                  onClick={async () => {
-                    if (!window.confirm("确定要删除此目标吗？")) return;
-                    try {
-                      await deleteTarget(contextMenu.targetId);
-                      setTargets((current) => current.filter((s) => s.target.id !== contextMenu.targetId));
-                      if (selectedTargetId === contextMenu.targetId) setSelectedTargetId(null);
-                    } catch (e) {
-                      setAppError((e as any)?.message ?? String(e));
-                    }
+                  onClick={() => {
+                    if (!target || !contextMenu) return;
+                    const targetId = contextMenu.targetId;
+                    const address = target.target.address;
                     closeContextMenu();
+                    setConfirmRequest({
+                      title: "删除目标",
+                      message: `将删除目标 ${address} 及其全部历史数据。此操作不可撤销。`,
+                      confirmText: "删除",
+                      action: async () => {
+                        try {
+                          await deleteTarget(targetId);
+                          setTargets((current) =>
+                            current.filter((s) => s.target.id !== targetId),
+                          );
+                          if (selectedTargetId === targetId) setSelectedTargetId(null);
+                        } catch (e) {
+                          setAppError((e as any)?.message ?? String(e));
+                        }
+                      },
+                    });
                   }}
                 >
                   删除
@@ -754,6 +793,20 @@ export default function App() {
             );
           })()}
         </div>
+      )}
+
+      {confirmRequest && (
+        <ConfirmDialog
+          title={confirmRequest.title}
+          message={confirmRequest.message}
+          confirmText={confirmRequest.confirmText}
+          onConfirm={() => {
+            const { action } = confirmRequest;
+            setConfirmRequest(null);
+            void action();
+          }}
+          onCancel={() => setConfirmRequest(null)}
+        />
       )}
 
       {showBatchImport && (
